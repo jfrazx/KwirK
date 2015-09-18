@@ -1,0 +1,39 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "noImplicitAny": true,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "sourceMap": false
+    },
+    "filesGlob": [
+        "./src/**/*.ts",
+        "./typings/*"
+    ],
+    "files": [
+        "./src/bot.ts",
+        "./src/constants.ts",
+        "./src/krepl.ts",
+        "./src/networks/hipchat/hipchat.ts",
+        "./src/networks/irc/channel.ts",
+        "./src/networks/irc/connection.ts",
+        "./src/networks/irc/handler.ts",
+        "./src/networks/irc/helpers.ts",
+        "./src/networks/irc/irc.ts",
+        "./src/networks/irc/sasl/sasl.ts",
+        "./src/networks/irc/server.ts",
+        "./src/networks/irc/user.ts",
+        "./src/networks/netfactory.ts",
+        "./src/networks/network.ts",
+        "./src/networks/slack/slack.ts",
+        "./src/tld.ts",
+        "./src/utilities/events.ts",
+        "./src/utilities/hook.ts",
+        "./src/utilities/hooks.ts",
+        "./src/utilities/logger.ts",
+        "./src/utilities/mixin.ts",
+        "./src/utilities/timer.ts",
+        "./typings/tsd.d.ts"
+    ]
+}

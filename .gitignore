@@ -1,0 +1,13 @@
+
+*.map
+*.js
+.DS_Store
+
+!test/**/*
+
+*/.DS_Store
+
+node_modules/
+typings/**/*
+
+!typings/**/node*

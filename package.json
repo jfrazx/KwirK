@@ -1,0 +1,38 @@
+{
+  "name": "kwirk",
+  "version": "0.0.1",
+  "description": "KwirK, a sophisticated multi-network, multi-protocol bot, (eventually).",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "test"
+  },
+  "dependencies": {
+    "winston": "^1.0.1",
+    "async": "^1.4.2",
+    "eventemitter2": "^0.4.14",
+    "lodash": "^3.10.1"
+  },
+  "devDependencies": {
+    "mocha": "^2.3.2"
+  },
+  "scripts": {
+    "test": "npm run node-test",
+    "node-test": "mocha --recursive -R spec ./test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jfrazx/KwirK.git"
+  },
+  "keywords": [
+    "irc",
+    "bot"
+  ],
+  "author": "Jason Franz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jfrazx/KwirK/issues"
+  },
+  "homepage": "https://github.com/jfrazx/KwirK#readme"
+}
