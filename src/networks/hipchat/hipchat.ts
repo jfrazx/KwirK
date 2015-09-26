@@ -1,6 +1,6 @@
 
 import { Bot } from '../../bot';
-import { Network, INetwork, INetOptions, INetworkOptions } from '../network';
+import { Network, INetwork, INetOptions, INetworkOptions } from '../base/network';
 
 export class HipChat extends Network implements IHipChat {
 

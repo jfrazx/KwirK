@@ -1,6 +1,6 @@
 
 import { Bot } from '../../bot';
-import { Network, INetwork, INetworkOptions, INetOptions } from '../network';
+import { Network, INetwork, INetworkOptions, INetOptions } from '../base/network';
 import * as _ from 'lodash';
 
 export class Slack extends Network implements ISlack {

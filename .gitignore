@@ -1,6 +1,7 @@
 
 *.map
 *.js
+*.log
 .DS_Store
 
 !test/**/*

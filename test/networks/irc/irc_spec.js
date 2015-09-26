@@ -1,16 +1,15 @@
 
-var Kwirk = require( '../../../index' );
-var Bot = Kwirk.Bot;
+var Kwirk  = require( '../../../index' );
+var Bot    = Kwirk.Bot;
 var Server = Kwirk.Server;
-var IRC = Kwirk.IRC;
+var IRC    = Kwirk.IRC;
+var assert = require( 'assert' );
 
-var assert  = require( 'assert' );
-
-describe("IRC", function(){
+describe( "IRC", function(){
   var bot = new Bot();
 
-  describe('configuration', function(){
-    it('should have default values applied', function(){
+  describe( 'configuration', function(){
+    it( 'should have default values applied', function(){
       var network = new IRC( bot,
         {
           type: 'irc',
@@ -26,7 +25,7 @@ describe("IRC", function(){
           channels: [
             {
               name: '#kwirk',
-              modes: ['n', 't', 's', 'p'],
+              modes: [ 'n', 't', 's', 'p' ],
               password: 'channelkey',
               key: 'channelfishkey'
             }
@@ -46,7 +45,7 @@ describe("IRC", function(){
       assert.equal( network.quit_message, 'KwirK, a sophisticated multi-network, multi-protocol bot' );
     });
 
-    it('should accept assigned default values', function(){
+    it( 'should accept assigned default values', function(){
       var network = new IRC( bot,
         {
           name: 'freenode',

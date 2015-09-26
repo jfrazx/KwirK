@@ -1,14 +1,16 @@
 
-import { Channel } from './channel';
-import { User } from './user';
-import { Network } from '../network';
+import { IrcChannel } from './irc_channel';
+import { IrcUser } from './irc_user';
+import { Network } from '../base/network';
 import { Bot } from '../../bot';
+
+// this should be more generic 
 
 export module Helpers {
 
-  export function Channel( channel: Channel, network?: string ): Channel;
-  export function Channel( channel: string, network?: string ): Channel;
-  export function Channel( channel: any, network?: string ): Channel {
+  export function Channel( channel: IrcChannel, network?: string ): IrcChannel;
+  export function Channel( channel: string, network?: string ): IrcChannel;
+  export function Channel( channel: any, network?: string ): IrcChannel {
     if ( channel instanceof Channel )
       return channel;
 

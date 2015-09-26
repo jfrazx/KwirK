@@ -1,29 +1,22 @@
 
-import { User } from './user';
-import { AnyNet } from '../netfactory';
+import { IrcUser } from './irc_user';
+import { Channel, IChannelOptions } from '../base/channel';
+import { IRC } from './irc';
 import * as _ from 'lodash';
 
-export class Channel {
+export class IrcChannel extends Channel {
 
-  public users: User[];
+  public users: IrcUser[];
   public topic: string = null;
-  public name: string;
   public password: string;
   public key: string;
   public modes: string[];
 
-  private _in_channel: boolean = false;
+  constructor( network: IRC, options: IIrcChannel ) {
+    super( network, options.name );
 
-
-  constructor( public network: AnyNet, options: IChannel ) {
     _.merge( this, _.defaults( options, this.defaults() ));
 
-    if ( !this.name || !this.name.trim().length )
-      throw new Error('IRC Channel must have a name');
-  }
-
-  public toString(): string {
-    return this.name;
   }
 
   public join( key: string = null ): void {
@@ -56,7 +49,7 @@ export class Channel {
   * @param <String> reason: a reason for removing from the Channel
   * @returns <void>
   */
-  public remove( user: User, reason?: string ): void {
+  public remove( user: IrcUser, reason?: string ): void {
     this.send( 'REMOVE ' + user.nick + " :" + reason );
   }
 
@@ -79,7 +72,6 @@ export class Channel {
 
   /**
   * Retrieve the channel encryption key
-  *
   * @return <String> || <Null> ( if not set )
   */
   get encryption_key(): string {
@@ -88,7 +80,6 @@ export class Channel {
 
   /**
   * Set the channel encryption key
-  *
   * @param <String> key: The shiny new channel encryption key
   * @return <void>
   */
@@ -98,7 +89,6 @@ export class Channel {
 
   /**
   * Retrieve the channel key ( aka password )
-  *
   * @return <String> || <Null> ( if not set )
   */
   get channel_key(): string {
@@ -107,9 +97,8 @@ export class Channel {
 
   /**
   * Set the channel key ( aka password )
-  *
   * @param <String> key: The new channel key
-  *
+  * @return <void>
   */
   set channel_key( key: string ) {
     this.password = key;
@@ -117,9 +106,9 @@ export class Channel {
     // TODO : if in channel, set new key
   }
 
-  private defaults(): IChannel {
+  private defaults(): IIrcChannel {
     return {
-      channel: null,
+      name: null,
       modes: [],
       password: null,
       key: null
@@ -128,8 +117,7 @@ export class Channel {
 }
 
 
-export interface IChannel {
-  channel: string;
+export interface IIrcChannel extends IChannelOptions {
   modes?: string[];
   password?: string;
   key?: string;

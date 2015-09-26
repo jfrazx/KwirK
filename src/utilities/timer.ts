@@ -29,7 +29,7 @@ export class Timer implements ITimer {
   public emitLevel: number;
 
   public busy: boolean;
-  public timer: any; // import Node Timer Object?
+  public timer: number; // NodeJS.Timer id
   public callback: Function;
 
   private _countdown: number;
@@ -93,9 +93,9 @@ export class Timer implements ITimer {
                         ? options.emitLevel : 1;
     this.LEVEL = {
       1: '',
-      2: ' ' + this.network.name,
-      3: ' ' + this.network.name + ' ' + this.reference,
-      4: ' ' + this.reference
+      2: '::' + this.network.name,
+      3: '::' + this.network.name + '::' + this.reference,
+      4: '::' + this.reference
     };
 
     // keep track of original so we can reassign if the timer gets restarted
@@ -162,7 +162,7 @@ export class Timer implements ITimer {
 
       this.timer = setInterval( this.go.bind( this ), this.interval );
 
-      this.network.bot.emit( 'start' + this.LEVEL[ this.emitLevel ] );
+      this.network.bot.emit( 'jobstart' + this.LEVEL[ this.emitLevel ] );
 
       if ( this.immediate )
         this.go();
@@ -194,7 +194,7 @@ export class Timer implements ITimer {
       clearInterval( this.timer );
 
       if ( this.emitLevel )
-        this.network.bot.emit( 'stop' + this.LEVEL[ this.emitLevel ] );
+        this.network.bot.emit( 'jobstop' + this.LEVEL[ this.emitLevel ] );
 
       this.timer = null;
       this.start_wait = 0;
@@ -223,7 +223,7 @@ export class Timer implements ITimer {
       this.busy = true;
 
       if ( this.emitLevel )
-        this.network.bot.emit( 'jobstart' + this.LEVEL[ this.emitLevel ] );
+        this.network.bot.emit( 'jobbegin' + this.LEVEL[ this.emitLevel ] );
 
       ++this.executions;
 
@@ -244,7 +244,7 @@ export class Timer implements ITimer {
   private done( err: Error, ...args: any[] ): void {
 
     if ( this.emitLevel )
-      this.network.bot.emit( 'jobstop' + this.LEVEL[ this.emitLevel ], args );
+      this.network.bot.emit( 'jobend' + this.LEVEL[ this.emitLevel ], args );
 
     if ( err ) {
       this.errors.push( err );
