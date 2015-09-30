@@ -130,6 +130,8 @@ export class Bot extends EventEmitter implements IBot {
         this.emit( 'removing network', network.name );
         this.Logger.info( 'Removing network ' + network.name );
 
+        this.clearTimers( network.name );
+
         if ( network.connected() ) {
           this.network[ network.name ].disconnect( ( err?: Error )=> {
             delete this.network[ network.name ];

@@ -1,4 +1,5 @@
 
+
 import { Bot } from '../../bot';
 import { Connection } from '../base/connection';
 
@@ -9,23 +10,25 @@ import * as tls  from 'tls';
 import * as _ from 'lodash';
 import { ITimer } from '../../utilities/timer';
 import * as Hook from '../../utilities/hook';
-import { Transform } from 'stream';
+import { Constants } from '../../constants';
+import { Handler } from './handler';
 
 export class IrcConnection extends Connection {
 
   public reconnect_attempts = 0;
-  public request_disconnect = false;
+  public request_disconnect: boolean;
+  public capabilities: { requested: string[], enabled: string[] } = { requested: [], enabled: [] };
+  public registered: boolean;
 
-  private use_write_buffer = false;
-  private buffer = new Transform();
-  private pong_timer: ITimer;
   private reconnect_timer: ITimer;
   private held_data: any;
   private hold_last: boolean;
-  private registered = false;
+  private handler: Handler;
 
   constructor( public network: IRC, public server: IrcServer ) {
     super( network, server );
+
+    this.handler = new Handler( this.network );
   }
 
   public connect(): void {
@@ -34,18 +37,14 @@ export class IrcConnection extends Connection {
       return;
     }
 
+    this.request_disconnect = false;
+    this.registered = false;
 
     Hook.pre( 'connect', this );
 
     var socket_connect_event = 'connect';
 
     if ( this.server.ssl ){
-
-      // socket does nothing when this is called
-      // this.socket = new tls.TLSSocket( this.socket, {
-      //   isServer: false,
-      //   rejectUnauthorized: this.network.reject_invalid_certs
-      // });
 
       this.socket = tls.connect( {
         rejectUnauthorized: this.network.reject_invalid_certs,
@@ -65,48 +64,26 @@ export class IrcConnection extends Connection {
 
   private connectionSetup(): void {
     this.pipeSetup();
-    this.bot.emit( 'connect::' + this.network.name, this.network, this.server );
-
-    // this.socket.setEncoding( this.network.encoding );
 
     this._connected = true;
 
     this.send_cap_ls();
-    this.send_cap_end();
+
     this.send_login();
 
-    if ( !this.pong_timer ) {
-
-      this.pong_timer = this.network.Timer(
-        {
-          interval: 120000,
-          autoStart: true,
-          blocking: false,
-          ignoreErrors: false,
-          immediate: true,
-          emitLevel: 0,
-          reference: 'pong::' + this.network.name,
-          stopOn: 'disconnect::' + this.network.name,
-          restartOn: 'registered::' + this.network.name
-      }, this.pong.bind( this ) );
-    }
-
     this.socket.on( 'data', this.onData.bind( this ) );
-    // this.socket.on( 'data', this.parseMessage.bind( this ) );
     this.socket.on( 'end', this.onEnd.bind( this ) );
     this.socket.on( 'close', this.onClose.bind( this ) );
 
-    Hook.post( 'connect', this );
-
-    this.bot.emit( 'registered::' + this.network.name , this.network, this.server );
+    this.network.bot.emit( 'connect::' + this.network.name, this.network, this.server );
   }
 
   private pipeSetup(): void {
-    var self = this;
+
     this.buffer.pipe( this.socket );
     this.buffer.on( 'pause', () => {
-      self.buffer.once( 'drain', () => {
-        self.buffer.resume();
+      this.buffer.once( 'drain', () => {
+        this.buffer.resume();
       });
     });
   }
@@ -116,10 +93,11 @@ export class IrcConnection extends Connection {
   * @param <string> message: The quit message to send
   * @return <void>
   */
-  public disconnect( message: string = this.network.quit_message ): void {
+  public disconnect( message?: string ): void {
     if ( !this.connected() && !this.socket ) { return; }
 
-    if ( this.pong_timer ) { this.pong_timer.stop(); }
+    if ( message === undefined )
+      message = this.network.quit_message;
 
     this.request_disconnect = true;
 
@@ -128,31 +106,39 @@ export class IrcConnection extends Connection {
     process.nextTick( this.end.bind( this ) );
   }
 
-  public dispose( message?: string ): void {
+  public dispose(): void {
     if ( this.connected() )
-      this.disconnect( message );
+      this.disconnect();
 
     if ( this.reconnect_timer )
       this.reconnect_timer.stop();
 
     if ( this.socket )
-      this.disposeSocket();
-  }
+      this.end();
 
-  private disposeSocket(): void {
-    if ( this.socket ) {
-      this.socket.end();
-      this.socket.removeAllListeners();
-      this.socket = null;
-    }
+    _.each( this.network.users, ( user ) => {
+      user.dispose();
+    });
+
+    _.each( _.keys( this.network.channel ), ( name ) => {
+      this.network.channel[ name ].dispose();
+    });
+
+    this.network.users = [];
+    this.network.channel = {};
+
+    this.server.dispose();
+    this.server = null;
   }
 
   /**
   * Called when the socket receives data
   * @param <Buffer> data: The data received from the socket
   * @return <void>
+  * @private
   */
   private onData( data: Buffer ) {
+    // from kiwiIRC
     var data_pos: number,               // Current position within the data Buffer
         line_start = 0,
         lines: Buffer[] = [],
@@ -171,7 +157,7 @@ export class IrcConnection extends Connection {
     if ( !lines[ 0 ] ) {
         if ( ( this.held_data ? this.held_data.length : 0 ) + data.length > max_buffer_size ) {
             // Buffering this data would exeed our max buffer size
-            this.bot.emit( 'error', 'Message buffer too large' );
+            this.network.bot.emit( 'error', 'Message buffer too large' );
             this.socket.destroy();
 
         } else {
@@ -201,7 +187,7 @@ export class IrcConnection extends Connection {
     if ( line_start < data_pos ) {
         if ( ( data.length - line_start ) > max_buffer_size ) {
             // Buffering this data would exeed our max buffer size
-            this.bot.emit( 'error', 'Message buffer too large' );
+            this.network.bot.emit( 'error', 'Message buffer too large' );
             this.socket.destroy();
             return;
         }
@@ -224,7 +210,6 @@ export class IrcConnection extends Connection {
   }
 
   // more on this later...
-  // TODO utilize buffer
   public send( data: string ): void {
     if ( this.connected() && this.socket )
       // this.socket.write( data + '\r\n' );
@@ -237,11 +222,9 @@ export class IrcConnection extends Connection {
   * @return <void>
   */
   private onClose( error: boolean ): void {
-    this.socket.end();
-    this._connected = false;
 
-    if ( this.pong_timer )
-      this.pong_timer.stop();
+    this._connected = false;
+    this.registered = false;
 
     if ( !this.request_disconnect )
       this.reconnect();
@@ -252,14 +235,13 @@ export class IrcConnection extends Connection {
   * Called if the socket has an error
   * @param <any> e: The Error type objct that gets passed
   * @return <void>
+  * @private
   */
   private onError( e: any ): void {
-    console.log( 'onError', e );
+    this.network.bot.Logger.error( `an ${ e.code } error occured`, e );
 
     switch ( e.code ) {
       case 'EPIPE':
-        if ( this.pong_timer )
-          this.pong_timer.stop();
 
         if ( !this.request_disconnect )
           return this.reconnect();
@@ -269,14 +251,20 @@ export class IrcConnection extends Connection {
         return this.server.disable();
 
       case 'ETIMEDOUT':
-        if ( this.reconnect_attempts < this.network.connection_attempts )
-          return this.server.disable();
+        if ( this.reconnect_attempts < this.network.connection_attempts ) {
+          this.server.disable();
+          this.reconnect_attempts = 0;
+          return this.network.jump();
+        }
 
         this.reconnect_attempts++;
         this.reconnect();
         break;
+      case 'ECONNRESET':
+
+        break;
       default: {
-        this.bot.Logger.error( 'an unswitched error occurred', e );
+        this.network.bot.Logger.error( 'an unswitched error occurred', e );
       }
     }
   }
@@ -288,7 +276,7 @@ export class IrcConnection extends Connection {
   private reconnect(): void {
     this.reconnect_delay = this.reconnect_delay * this.reconnect_attempts || this.reconnect_delay;
 
-    this.bot.Logger.info( 'setting timer to delay ' + this.server.host + ' reconnection for ' + ( this.reconnect_delay / 1000 ).toString() + ' seconds on network ' + this.network.name );
+    this.network.bot.Logger.info( 'setting timer to delay ' + this.server.host + ' reconnection for ' + ( this.reconnect_delay / 1000 ).toString() + ' seconds on network ' + this.network.name );
 
     if ( this.reconnect_timer )
 
@@ -304,6 +292,16 @@ export class IrcConnection extends Connection {
     this.reconnect_timer.start();
   }
 
+  /**
+  * What to do after a successful registration
+  * @return <void>
+  */
+  private onRegistered( network: IRC ): void {
+    this.registered = true;
+
+    Hook.post( 'connect', this.network );
+  }
+
   private onEnd(): void {
     this._connected = false;
 
@@ -317,25 +315,13 @@ export class IrcConnection extends Connection {
   /**
   * Sends a PONG message to the IRC server
   * @param <string> message: the message to include
-  * @param <Function> done: The callback to invoke
   * @return <void>
   */
-  private pong( message: string ): void;
-  private pong( done: Function ): void;
-  private pong( message: string, done?: Function ): void;
-  private pong( message?: any, done?: Function ): void {
+  public pong( message?: string ): void {
     if ( this.socket.destroyed )
-      return this.disconnect();
-
-    if ( typeof message === 'function' ) {
-      done = message;
-      message = null;
-    }
+      return this.disposeSocket();
 
     this.send( 'PONG '+ ( message ? message : this.server.host ) );
-
-    if ( done )
-      done();
   }
 
   /**
@@ -343,19 +329,19 @@ export class IrcConnection extends Connection {
   * @return <void>
   */
   private send_cap_ls(): void {
-    this.send( 'CAP LS ' );
+    this.send( 'CAP LS 302' );
   }
 
   // TODO: get network capabilities
-  private send_cap_req(): void {
-    this.send( 'CAP REQ :' );
+  public send_cap_req( capabilities?: string ): void {
+    this.send( 'CAP REQ :' + capabilities );
   }
 
   /**
   * End the CAP negotiations
   * @return <void>
   */
-  private send_cap_end(): void {
+  public send_cap_end(): void {
     this.send( 'CAP END' );
   }
 
@@ -372,29 +358,6 @@ export class IrcConnection extends Connection {
     this.send( 'USER ' + this.network.user + ' ' + ( _.include( this.network.modes, 'i' ) ? '8' : '0' ) + " * :" + this.network.realname  );
   }
 
-  private flushWriteBuffer(): void {
-
-    // if disconnected, reset buffer
-    // if ( this.disconnected() ) {
-    //   return this.bufferReset();
-    // }
-
-
-    // buffer is empty
-    // if ( !this.write_buffer.length ) {
-    //   return this.bufferReset();
-    // }
-
-  }
-
-  /**
-  * Reset the write Buffer
-  * @return <void>
-  */
-  // private bufferReset(): void {
-  //   this.write_buffer   = [];
-  //   this.writing_buffer = false;
-  // }
 
   /**
   * Parse the data received from the server
@@ -402,6 +365,7 @@ export class IrcConnection extends Connection {
   * @return <void>
   */
   private parseMessage( line: string ): void {
+    console.log( line );
     var tags: any[] = [];
 
     if ( !line )
@@ -414,7 +378,7 @@ export class IrcConnection extends Connection {
     var message = parse_regex.exec( line.replace( /^\r+|\r+$/, '' ) );
 
     if ( !message ) {
-      this.bot.Logger.warn( 'Malformed IRC line: %s', line.replace( /^\r+|\r+$/, '' ) );
+      this.network.bot.Logger.warn( 'Malformed IRC line: %s', line.replace( /^\r+|\r+$/, '' ) );
       return;
     }
 
@@ -435,11 +399,29 @@ export class IrcConnection extends Connection {
         ident:      message[ 4 ] || '',
         hostname:   message[ 5 ] || '',
         command:    message[ 6 ],
-        params:     message[ 7 ] ? message[ 7 ].split( / +/ ) : []
+        params:     message[ 7 ] ? message[ 7 ].split( / +/ ) : [],
+        network:    this.network
     };
 
     if ( message[ 8 ] ) {
         msg_obj.params.push( message[ 8 ].replace( /\s+$/, '' ) );
+    }
+
+    try {
+      let command = parseInt( msg_obj.command ) || msg_obj.command;
+      let emission = Constants.IRC[ command ] + '::' + this.network.name;
+
+      if ( Constants.IRC[ command ] === undefined )
+        emission = command.toString().toUpperCase() + '::' + this.network.name;
+
+      this.network.bot.emit( emission, msg_obj );
+    }
+    catch ( e ) {
+      this.network.bot.Logger.error( 'An error occured', e );
+      this.network.bot.emit('error::'+ this.network.name, {
+        error: e,
+        message: msg_obj
+      } );
     }
   }
 }

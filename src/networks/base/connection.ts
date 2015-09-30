@@ -4,18 +4,20 @@ import { Server } from './server';
 import { AnyNet } from '../netfactory';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
+import { Transform } from 'stream';
 
 export class Connection implements IConnection {
 
-  public bot: Bot;
   public socket: Socket | TLSSocket;
 
   protected _connected = false;
-  protected reconnect_delay: number = 4000;
+  protected reconnect_delay: number = 5000;
   protected write_buffer: string[] = [];
+  protected buffer = new Transform();
+
 
   constructor( public network: AnyNet, public server: Server ) {
-    this.bot = this.network.bot;
+
   }
 
   /**
@@ -42,10 +44,22 @@ export class Connection implements IConnection {
 
   public dispose( message?: string ): void {}
 
+  /**
+  * End socket connection and listeners
+  * @return <void>
+  * @protected
+  */
+  protected disposeSocket(): void {
+    if ( this.socket ) {
+      this.socket.end();
+      this.socket.removeAllListeners();
+      this.socket = null;
+    }
+  }
+
 }
 
 export interface IConnection extends IConnectionOptions {
-  bot: Bot;
   network: AnyNet;
   server: Server;
   socket: Socket | TLSSocket;

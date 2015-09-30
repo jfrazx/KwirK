@@ -4,13 +4,10 @@ import { Bot } from '../../bot';
 
 export class Server implements IServer {
 
-  public bot: Bot;
-
   protected _connected = false;
   protected _enable    = true;
 
   constructor( public network: AnyNet, public host: string, public port: number ) {
-    this.bot = this.network.bot;
   }
 
   /**
@@ -18,7 +15,7 @@ export class Server implements IServer {
   * @return <void>
   */
   public enable(): void {
-    this.bot.Logger.info( 'enabling server ' + this.host + ' on ' + this.network.name );
+    this.network.bot.Logger.info( 'enabling server ' + this.host + ' on ' + this.network.name );
 
     this._enable = true;
   }
@@ -60,6 +57,8 @@ export class Server implements IServer {
   public enabled(): boolean {
     return this._enable;
   }
+
+  public dispose(): void {}
 }
 
 export interface IServer extends IServerOptions {
@@ -69,6 +68,7 @@ export interface IServer extends IServerOptions {
   disable(): void;
   disabled(): boolean;
   disconnected(): void;
+  dispose(): void;
   enable(): void;
   enabled(): boolean;
 }

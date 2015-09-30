@@ -7,10 +7,14 @@ export class User implements IUser {
 
   }
 
+  public dispose(): void {}
+
 }
 
 export interface IUser extends IUserOptions {
   network: AnyNet;
+
+  dispose(): void;
 }
 
 export interface IUserOptions {

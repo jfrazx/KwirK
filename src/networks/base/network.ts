@@ -117,6 +117,7 @@ export class Network implements INetwork {
   */
   public clearTimers(): void {
     if ( this.bot.timers[ this.name ] ) {
+      this.bot.emit( 'CLEARTIMERS::'+ this.name, this );
       _.each( this.bot.timers[ this.name ], ( timer ) => {
         timer.stop();
       } );

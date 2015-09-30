@@ -1,6 +1,4 @@
 
-'use strict';
-
  import { Bot } from './src/bot';
 
  import { HipChat } from './src/networks/hipchat/hipchat';

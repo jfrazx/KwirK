@@ -19,7 +19,7 @@ export class IrcChannel extends Channel {
 
   }
 
-  public join( key: string = null ): void {
+  public join( key?: string ): void {
     this.send( _.compact( [ "JOIN", this.name, ( key ? key : this.password ) ] ).join( ' ' ) );
   }
 
@@ -55,7 +55,6 @@ export class IrcChannel extends Channel {
 
   /**
   * Sets or unsets a Channel mode
-  *
   * @param <String> mode: a mode string
   * @returns <void>
   * @example
@@ -65,10 +64,13 @@ export class IrcChannel extends Channel {
     this.send( 'MODE ' + this.name + ' '  + mode );
   }
 
+  /**
+  * Is the bot in this channel?
+  * @return <void>
+  */
   public inChannel(): boolean {
     return this._in_channel;
   }
-
 
   /**
   * Retrieve the channel encryption key

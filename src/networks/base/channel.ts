@@ -14,10 +14,14 @@ export class Channel implements IChannel {
   public toString(): string {
     return this.name;
   }
+
+  public dispose(): void {}
 }
 
 export interface IChannel extends IChannelOptions {
   network: AnyNet;
+
+  dispose(): void;
   toString(): string;
 }
 
