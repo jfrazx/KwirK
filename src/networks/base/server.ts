@@ -2,7 +2,7 @@
 import { AnyNet } from '../netfactory';
 import { Bot } from '../../bot';
 
-export class Server implements IServer {
+export abstract class Server implements IServer {
 
   protected _connected = false;
   protected _enable    = true;
@@ -24,7 +24,7 @@ export class Server implements IServer {
   * Disable the server
   * @return <void>
   */
-  public disable(): void {}
+  public abstract disable(): void;
 
   /**
   * Is this server connected?
@@ -58,7 +58,7 @@ export class Server implements IServer {
     return this._enable;
   }
 
-  public dispose(): void {}
+  public abstract dispose(): void;
 }
 
 export interface IServer extends IServerOptions {

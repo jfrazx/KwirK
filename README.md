@@ -4,13 +4,13 @@
 KwirK aims to be a sophisticated, multi-network, multi-protocol utility bot that can
 act as a bridge between popular services.
 This project is in its infancy and has an enormous amount of work to be done before it
-can achieve these lofty expectations. Your assistance would be most appreciated.
+can achieve these lofty expectations.
 
 ## Goals
 
 - support multiple chat protocols  
   - IRC is the current focus with Slack and HipChat next on the list  
-- link channels on the different networks  
+- link channels on the different networks  (IRC<->IRC is alpha)
 - transparent channel encryption with DiffieHellman key exchange  
 - http administrative front-end and client area  
 - ability to link multiple bots  
@@ -33,10 +33,7 @@ tsd install
 
 ## Functionality
 
-The bot, with the below example, will probably connect to the given networks.
-Then it will probably join the configured channels, but that is about the
-extent of its current capabilities. Not very exciting yet. You should certainly
-assist in making it better.
+The bot, with the below example, will join the given networks and channels. Basic IRC channel binding has been introduced. Check the examples for details.
 
 ## Example
 ```

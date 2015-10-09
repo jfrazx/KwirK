@@ -1,0 +1,12 @@
+
+*.map
+*.ts
+*.log
+*.pid
+
+.DS_Store
+
+*/.DS_Store
+
+node_modules/
+typings/

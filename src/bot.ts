@@ -1,24 +1,26 @@
 
 import { AnyNet, IAnyNet, NetFactory } from './networks/netfactory';
 import { Network } from './networks/base/network';
-import { Server } from './networks/base/server';
 import { EventEmitter } from './utilities/events';
+import { Server } from './networks/base/server';
 import { Logger } from './utilities/logger';
+import { Router } from './messaging/router';
 import { Timer } from './utilities/timer';
 import * as _ from 'lodash';
-
 
 export class Bot extends EventEmitter implements IBot {
 
     public network: { [ network: string ]: AnyNet } = {};
     public timers: { [ network: string ]: Timer[] } = {};
     public Logger = Logger;
+    public router: Router;
     public Timer = Timer;
 
     constructor( config: IAnyNet = {} ) {
-      super( { wildcard: true, delimiter: '::' } );
+      super();
 
       this.setMaxListeners( 0 );
+
       // assign defaults
       // this.config.defaults = this.config.defaults ? _.defaults( this.config.defaults, this.defaults() ) : this.defaults();
 
@@ -32,9 +34,9 @@ export class Bot extends EventEmitter implements IBot {
       //   this.addNetwork( network );
       // });
 
-      this.on( 'connect::*', this.onConnect.bind( this ) );
-      this.on( 'registered::*', this.onRegistered.bind( this ) );
-      this.on( 'disconnect::*', this.onDisconnect.bind( this ) );
+      this.setupListeners();
+
+      this.router = new Router( this );
     }
 
     /**
@@ -59,7 +61,6 @@ export class Bot extends EventEmitter implements IBot {
       // no networks?
       if ( !( _.keys( this.network ).length )) {
         this.emit( 'error', new Error( 'no networks available' ) );
-        this.Logger.warn( 'no networks available' );
         return;
       }
 
@@ -158,10 +159,10 @@ export class Bot extends EventEmitter implements IBot {
       if ( name instanceof Network ) {
         return !( !_.find( this.network, ( network ) => {
           return network === name;
-        }))
-      } else {
-        return this.network[ name ] !== undefined;
+        }));
       }
+
+      return this.network[ name ] !== undefined;
     }
 
     /**
@@ -204,16 +205,59 @@ export class Bot extends EventEmitter implements IBot {
       });
     }
 
+    /**
+    * Setup general listeners
+    * @return <void>
+    * @private
+    */
+    private setupListeners(): void {
+      this.on( 'connect::*', this.onConnect.bind( this ) );
+      this.on( 'registered::*', this.onRegistered.bind( this ) );
+      this.on( 'disconnect::*', this.onDisconnect.bind( this ) );
+      this.on( 'error', this.onError.bind( this ) );
+    }
+
+    /**
+    * Fired when a network is first connected
+    * @param <AnyNet> network: The network that was connected
+    * @param <Server> server: The network server that was connected
+    * @return <void>
+    * @private
+    */
     private onConnect( network: AnyNet, server: Server ): void {
       this.Logger.info( 'connected to nework ' + network.name + ' on ' + server.host + ':' + server.port.toString() );
     }
 
-    private onRegistered( network: AnyNet, server: Server ): void {
-      this.Logger.info( 'registered ' + network.name + ' on ' + server.host + ':' + server.port.toString() );
-    }
-
+    /**
+    * Fired when a network is disconnected
+    * @param <AnyNet> network: The network that was disconnected
+    * @param <Server> server: The network server that was disconnected
+    * @return <void>
+    * @private
+    */
     private onDisconnect( network: AnyNet, server: Server ): void {
       this.Logger.info( 'disconnected from ' + network.name + ' and ' + server.host + ':' + server.port.toString() );
+    }
+
+    /**
+    * Fired on any error event
+    * @param <Error> e: The error object
+    * @return <void>
+    * @private
+    */
+    private onError( e: Error ): void {
+      this.Logger.error( e.toString() );
+    }
+
+    /**
+    * Fired when a network is first registered
+    * @param <AnyNet> network: The network that was registered
+    * @param <Server> server: The network server that was registered
+    * @return <void>
+    * @private
+    */
+    private onRegistered( network: AnyNet, server: Server ): void {
+      this.Logger.info( 'registered ' + network.name + ' on ' + server.host + ':' + server.port.toString() );
     }
   }
 

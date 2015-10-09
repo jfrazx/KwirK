@@ -2,7 +2,7 @@
 import * as events from 'eventemitter2';
 
 export class EventEmitter extends events.EventEmitter2 {
-  constructor( config: IEventEmitterConfiguration = { wildcard: true } ) {
+  constructor( config: IEventEmitterConfiguration = { wildcard: true, delimiter: '::' } ) {
     super( config );
   }
 }

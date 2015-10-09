@@ -6,9 +6,10 @@ import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { Transform } from 'stream';
 
-export class Connection implements IConnection {
+export abstract class Connection implements IConnection {
 
   public socket: Socket | TLSSocket;
+  public nick: string;
 
   protected _connected = false;
   protected reconnect_delay: number = 5000;
@@ -40,9 +41,9 @@ export class Connection implements IConnection {
   * Connect on with this connection
   * @return <void>
   */
-  public connect(): void {}
+  public abstract connect(): void;
 
-  public dispose( message?: string ): void {}
+  public abstract dispose(): void;
 
   /**
   * End socket connection and listeners

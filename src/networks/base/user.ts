@@ -1,20 +1,16 @@
 
+import { Target, ITarget } from './target';
 import { AnyNet } from '../netfactory';
 
-export class User implements IUser {
+export abstract class User extends Target implements IUser {
 
-  constructor( public network: AnyNet, public name: string ) {
-
+  constructor( public network: AnyNet, options: IUserOptions ) {
+    super( options.name.replace( /[^0-9a-zA-Z\-_.\/]/g, '' ));
   }
-
-  public dispose(): void {}
-
 }
 
-export interface IUser extends IUserOptions {
+export interface IUser extends IUserOptions, ITarget {
   network: AnyNet;
-
-  dispose(): void;
 }
 
 export interface IUserOptions {

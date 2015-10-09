@@ -18,7 +18,6 @@ export class IrcServer extends Server implements IServer {
 
   private _connection_history: connection_history[] = [];
 
-
   constructor( public network: IRC, options: IIrcServerOptions ) {
     super( network, options.host, options.port );
 
@@ -29,8 +28,12 @@ export class IrcServer extends Server implements IServer {
       throw new Error( 'you must supply a server host' );
 
 
-    this.network.bot.on( 'connect::'+ this.network.name +'::'+ this.host, this.onConnect.bind( this ) );
-    this.network.bot.on( 'disconnect::'+ this.network.name +'::'+ this.host, this.onDisconnect.bind( this ) );
+    this.network.bot.on( `connect::${ this.network.name }::${ this.host }`, this.onConnect.bind( this ) );
+    this.network.bot.on( `disconnect::${ this.network.name }::${ this.host }`, this.onDisconnect.bind( this ) );
+  }
+
+  public dispose(): void {
+
   }
 
 
@@ -58,7 +61,7 @@ export class IrcServer extends Server implements IServer {
     if ( network != this.network || server != this )
       return;
 
-    this.network.bot.Logger.info( 'disconnected from ' + this.host + ' on ' + this.network.name );
+    this.network.bot.Logger.info( `disconnected from ${ this.host } on ${ this.network.name }` );
     this._connected = false;
     this._connection_history[ this._connection_history.length-1 ].disconnected = Date.now();
   }
@@ -69,11 +72,11 @@ export class IrcServer extends Server implements IServer {
   * @return <void>
   */
   public disable(): void {
-    this.network.bot.Logger.info( 'disabling server ' + this.host + ' on ' + this.network.name );
+    this.network.bot.Logger.info( `disabling server ${ this.host }  on ${ this.network.name }` );
 
     this._enable = false;
 
-    if ( this.connected() || this.network.active_server == this )
+    if ( this.connected() && this.network.active_server == this )
       this.network.jump();
   }
 

@@ -1,30 +1,78 @@
 
+import { Channel, IChannel, IChannelOptions } from '../base/channel';
 import { IrcUser } from './irc_user';
-import { Channel, IChannelOptions } from '../base/channel';
 import { IRC } from './irc';
 import * as _ from 'lodash';
 
-export class IrcChannel extends Channel {
+export class IrcChannel extends Channel implements IIrcChannel {
 
-  public users: IrcUser[];
   public topic: string = null;
+  public users: IrcUser[] = [];
   public password: string;
   public key: string;
+
+  /**
+  * @todo change to object literal
+  */
   public modes: string[];
 
-  constructor( network: IRC, options: IIrcChannel ) {
-    super( network, options.name );
+  constructor( network: IRC, options: IIrcChannelOptions ) {
+    super( network, options );
 
-    _.merge( this, _.defaults( options, this.defaults() ));
+    _.merge( this, _.omit( _.defaults( options, this.defaults() ), [ 'name' ] ));
 
   }
 
+  /**
+  * Have the bot join the channel
+  * @param <string> key: The optional key to use to join the channel
+  * @return <void>
+  */
   public join( key?: string ): void {
-    this.send( _.compact( [ "JOIN", this.name, ( key ? key : this.password ) ] ).join( ' ' ) );
+    this.send( _.compact( [ "JOIN", this.name, ( key || this.password ) ] ).join( ' ' ), true );
   }
 
-  public send( message: string ): void {
-    this.network.send( message );
+  /**
+  * Perform an action in the channel
+  * @param <string> message: The action to perform
+  * @param <boolean> force: Attempt to message the channel even if not in it
+  * @return <void>
+  */
+  public action( message: string, force?: boolean ): void {
+    this.say( `\u0001ACTION ${ message }\u0001`, force );
+  }
+
+  /**
+  * Send a NOTICE to the channel
+  * @param <string> message: The notice to send to the channel
+  * @param <boolean> force: Attempt to message the channel even if not in it
+  * @return <void>
+  */
+  public notice( message: string, force?: boolean ): void {
+    this.send( `NOTICE ${ this.name } :${ message }`, force );
+  }
+
+  /**
+  * Send a message to the channel
+  * @param <string> message: The message to send to the channel
+  * @param <boolean> force: Attempt to message the channel even if not in it
+  * @return <void>
+  */
+  public say( message: string, force?: boolean ): void {
+    this.send( `PRIVMSG ${ this.name } :${ message }`, force );
+  }
+
+  /**
+  * Send a message to the network
+  * @param <string> message: The message to send to the network
+  * @param <boolean> force: Attempt to message the channel even if not in it
+  * @return <void>
+  */
+  public send( message: string, force: boolean = false ): void {
+    this.network.bot.Logger.info( 'Received message ' + message)
+
+    if ( message && ( this.inChannel || force ) )
+      this.network.send( message );
   }
 
   /**
@@ -33,7 +81,7 @@ export class IrcChannel extends Channel {
   * @return <void>
   */
   public part( message?: string ): void {
-    this.send( "PART " + this.name + " :" + message );
+    this.send( `PART ${ this.name } :${ message }` );
   }
 
   /**
@@ -50,7 +98,7 @@ export class IrcChannel extends Channel {
   * @returns <void>
   */
   public remove( user: IrcUser, reason?: string ): void {
-    this.send( 'REMOVE ' + user.nick + " :" + reason );
+    this.send( `REMOVE ${ user.name } :${ reason }` );
   }
 
   /**
@@ -61,15 +109,7 @@ export class IrcChannel extends Channel {
   *   this.mode( "+n" );
   */
   public mode( mode: string ): void {
-    this.send( 'MODE ' + this.name + ' '  + mode );
-  }
-
-  /**
-  * Is the bot in this channel?
-  * @return <void>
-  */
-  public inChannel(): boolean {
-    return this._in_channel;
+    this.send( `MODE ${ this.name } ${ mode }` );
   }
 
   /**
@@ -103,12 +143,22 @@ export class IrcChannel extends Channel {
   * @return <void>
   */
   set channel_key( key: string ) {
+    let same = this.password === key;
     this.password = key;
 
-    // TODO : if in channel, set new key
+    if ( this._in_channel && !same ) {
+      this.network.send( `MODE ${ this.name } ${ this.password ? '+k ' + this.password : '-k' }`  );
+    }
   }
 
-  private defaults(): IIrcChannel {
+  /**
+  * @todo fill in the blanks
+  */
+  public dispose(): void {
+
+  }
+
+  private defaults(): IIrcChannelOptions {
     return {
       name: null,
       modes: [],
@@ -118,8 +168,12 @@ export class IrcChannel extends Channel {
   }
 }
 
+interface IIrcChannel extends IIrcChannelOptions, IChannel {
 
-export interface IIrcChannel extends IChannelOptions {
+}
+
+
+export interface IIrcChannelOptions extends IChannelOptions {
   modes?: string[];
   password?: string;
   key?: string;

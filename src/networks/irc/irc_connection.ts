@@ -1,17 +1,15 @@
 
-
-import { Bot } from '../../bot';
 import { Connection } from '../base/connection';
-
-import { Socket } from 'net';
+import { Timer } from '../../utilities/timer';
+import * as Hook from '../../utilities/hook';
+import { Constants } from '../../constants';
 import { IrcServer } from './irc_server';
+import { Handler } from './handler';
+import { Bot } from '../../bot';
+import { Socket } from 'net';
 import { IRC } from './irc';
 import * as tls  from 'tls';
 import * as _ from 'lodash';
-import { ITimer } from '../../utilities/timer';
-import * as Hook from '../../utilities/hook';
-import { Constants } from '../../constants';
-import { Handler } from './handler';
 
 export class IrcConnection extends Connection {
 
@@ -20,20 +18,26 @@ export class IrcConnection extends Connection {
   public capabilities: { requested: string[], enabled: string[] } = { requested: [], enabled: [] };
   public registered: boolean;
 
-  private reconnect_timer: ITimer;
+  // the actual nick is use
+  public nick: string;
+
+  private reconnect_timer: Timer;
   private held_data: any;
   private hold_last: boolean;
   private handler: Handler;
+  private pong_timer: Timer;
 
   constructor( public network: IRC, public server: IrcServer ) {
     super( network, server );
 
     this.handler = new Handler( this.network );
+
+    this.setupListeners();
   }
 
   public connect(): void {
     if ( this.connected() ) {
-      this.network.bot.emit( 'already connected', this.network, this.server );
+      this.network.bot.emit( 'network_already_connected::'+ this.network.name, this.network, this.server );
       return;
     }
 
@@ -42,7 +46,7 @@ export class IrcConnection extends Connection {
 
     Hook.pre( 'connect', this );
 
-    var socket_connect_event = 'connect';
+    let socket_connect_event = 'connect';
 
     if ( this.server.ssl ){
 
@@ -79,7 +83,6 @@ export class IrcConnection extends Connection {
   }
 
   private pipeSetup(): void {
-
     this.buffer.pipe( this.socket );
     this.buffer.on( 'pause', () => {
       this.buffer.once( 'drain', () => {
@@ -94,7 +97,7 @@ export class IrcConnection extends Connection {
   * @return <void>
   */
   public disconnect( message?: string ): void {
-    if ( !this.connected() && !this.socket ) { return; }
+    if ( !this.connected() && !this.socket ) return;
 
     if ( message === undefined )
       message = this.network.quit_message;
@@ -212,7 +215,6 @@ export class IrcConnection extends Connection {
   // more on this later...
   public send( data: string ): void {
     if ( this.connected() && this.socket )
-      // this.socket.write( data + '\r\n' );
       this.buffer.push( data + '\r\n' );
   }
 
@@ -300,6 +302,21 @@ export class IrcConnection extends Connection {
     this.registered = true;
 
     Hook.post( 'connect', this.network );
+
+    if ( this.network.use_ping_timer ) {
+      this.pong_timer = this.network.Timer(
+        {
+          interval: 120000,
+          autoStart: true,
+          blocking: false,
+          ignoreErrors: true,
+          immediate: true,
+          emitLevel: 0,
+          reference: 'pong::' + this.network.name,
+          stopOn: 'disconnect::' + this.network.name,
+          restartOn: 'registered::' + this.network.name
+        }, this.pong.bind( this ) );
+    }
   }
 
   private onEnd(): void {
@@ -317,11 +334,21 @@ export class IrcConnection extends Connection {
   * @param <string> message: the message to include
   * @return <void>
   */
-  public pong( message?: string ): void {
+  public pong( done?: Function ): void;
+  public pong( message: string, done?: Function ): void;
+  public pong( message?: any, done?: Function ): void {
     if ( this.socket.destroyed )
       return this.disposeSocket();
 
-    this.send( 'PONG '+ ( message ? message : this.server.host ) );
+    if ( typeof message === 'function' ) {
+      done = message;
+      message = null;
+    }
+
+    this.send( 'PONG '+ ( message || this.server.host ) );
+
+    if ( done )
+      done();
   }
 
   /**
@@ -332,7 +359,11 @@ export class IrcConnection extends Connection {
     this.send( 'CAP LS 302' );
   }
 
-  // TODO: get network capabilities
+  /**
+  * Send a CAP REQ to the IRC server
+  * @param <string> capabilities: The capabilities to request from the Server
+  * @return <void>
+  */
   public send_cap_req( capabilities?: string ): void {
     this.send( 'CAP REQ :' + capabilities );
   }
@@ -345,6 +376,10 @@ export class IrcConnection extends Connection {
     this.send( 'CAP END' );
   }
 
+  private setupListeners(): void {
+    this.network.bot.on( 'registered::'+ this.network.name, this.onRegistered.bind( this ));
+  }
+
   /**
   * Send login information to the IRC server
   * @return <void>
@@ -354,10 +389,11 @@ export class IrcConnection extends Connection {
     if ( password )
       this.send( "PASS " + password );
 
-    this.send( 'NICK ' + this.network.generate_nick() );
+    this.nick = this.network.generate_nick()
+
+    this.send( 'NICK ' +  this.nick );
     this.send( 'USER ' + this.network.user + ' ' + ( _.include( this.network.modes, 'i' ) ? '8' : '0' ) + " * :" + this.network.realname  );
   }
-
 
   /**
   * Parse the data received from the server

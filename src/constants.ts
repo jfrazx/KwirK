@@ -800,12 +800,17 @@ export module Constants {
     /**
     * @todo Document these constants
     */
+    AWAY    = <any>'AWAY',
     CAP     = <any>'CAP',
     PING    = <any>'PING',
     JOIN    = <any>'JOIN',
+    PART    = <any>'PART',
     NOTICE  = <any>'NOTICE',
     PRIVMSG = <any>'PRIVMSG',
-    MODE    = <any>'MODE'
+    MODE    = <any>'MODE',
+
+    
+    QUOTE_PONG = 513
   }
 
   export enum HTTP {

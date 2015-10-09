@@ -1,12 +1,14 @@
 
-import { IrcServer, IIrcServerOptions } from './irc_server';
 import { Network, INetwork, INetOptions, INetworkOptions } from '../base/network';
-import { IrcChannel, IIrcChannel } from './irc_channel';
-import { Bot } from '../../bot';
+import { IrcChannel, IIrcChannelOptions } from './irc_channel';
+import { IrcServer, IIrcServerOptions } from './irc_server';
+import { IrcUser, IIrcUserOptions } from './irc_user';
 import { IrcConnection } from './irc_connection';
+import { Timer } from '../../utilities/timer';
 import { AnyNet } from '../netfactory';
 import { ISasl } from './sasl/sasl';
-import { Timer } from '../../utilities/timer';
+import { Bot } from '../../bot';
+import { IRCD } from './ircd';
 import * as _ from 'lodash';
 
 export class IRC extends Network implements IIRC {
@@ -17,7 +19,7 @@ export class IRC extends Network implements IIRC {
   public connection: IrcConnection = null;
   public connection_attempts: number;
   public active_server: IrcServer = null;
-  public motd: string[];
+  public ircd: IRCD;
   public name: string;
   public nick: string;
   public altnick: string;
@@ -30,6 +32,8 @@ export class IRC extends Network implements IIRC {
   public modes: string[];
   public options: IIrcOptions;
   public sasl: ISasl;
+  public use_ping_timer: boolean;
+  public reg_listen: string;
 
   private _index = 0;
   private auto_disabled_timer: Timer;
@@ -41,27 +45,24 @@ export class IRC extends Network implements IIRC {
   * @param <IIrcOptions> options: Options for configuring this network type
   */
   constructor( bot: Bot, options: IIrcOptions ) {
-    super( bot, options.name );
+    super( bot, options );
 
     this.options = _.defaults( options, this.defaults() );
-    this._enable = options.enable;
 
-    _.merge( this, _.omit( this.options, [ 'enable', 'servers', 'channels', 'type' ] ) );
+    _.merge( this, _.omit( this.options, [ 'enable', 'servers', 'channels', 'name' ] ) );
 
     _.each( this.options.servers, ( server: IIrcServerOptions ) => {
       this.addServer( server );
     });
 
-    _.each( this.options.channels, ( channel: IIrcChannel ) => {
+    _.each( this.options.channels, ( channel: IIrcChannelOptions ) => {
       this.addChannel( channel );
     });
 
-    this.bot.on( 'registered::' + this.name , this.onRegistered.bind( this ) );
+    this.ircd = new IRCD( this );
 
-    this.bot.on( 'connect::'+ this.name, ( network: IRC, server: IrcServer ) => {
-      this._connected = true;
-    });
 
+    this.setupListeners();
   }
 
   /**
@@ -69,22 +70,24 @@ export class IRC extends Network implements IIRC {
   * @param <IServer> serve: The options for configuring the new server
   * @return <void>
   */
-  public addServer( serve: IIrcServerOptions, callback?: Function ): void {
+  public addServer( serve: IIrcServerOptions, callback?: Function ): IRC {
     var server = new IrcServer( this, serve );
 
     if ( this.serverExists( server.host ) ) {
-      this.bot.emit( this.name + ' server exists', this, server );
+      this.bot.emit( `server_exists::${ this.name }`, this, server );
 
       if ( callback )
         callback( new Error( 'network server hosts must be unique' ), server );
 
-      return;
+      return this;
     }
 
     this.servers.push( server );
 
     if ( callback )
       callback( null, server );
+
+    return this;
   }
 
   /**
@@ -107,22 +110,26 @@ export class IRC extends Network implements IIRC {
   /**
   * Add new channel to channels array
   * @param <IChannel> chan: The options for configuring a new channel
-  * @return <void>
+  * @return <IrcChannel>
+  * @todo change this to return IRC, for consistencys
   */
-  public addChannel( chan: IIrcChannel, callback?: Function ): void {
+  public addChannel( chan: IIrcChannelOptions, callback?: Function ): IrcChannel {
     var channel = new IrcChannel( this, chan );
 
     if ( this.channel[ channel.name ] ) {
       channel = this.channel[ channel.name ];
 
-      this.bot.emit( 'channel exists', this, channel );
+      this.bot.emit( `channel_exists::${ this.name }`, this, channel );
     }
     else {
       this.channel[ channel.name ] = channel;
+      this.channels.push( channel );
     }
 
     if ( callback )
       callback( null, channel );
+
+    return channel
   }
 
   /**
@@ -150,7 +157,7 @@ export class IRC extends Network implements IIRC {
   */
   public inChannel( channel: string ): boolean {
     if ( this.channel[ channel ] )
-      return this.channel[ channel ].inChannel();
+      return this.channel[ channel ].inChannel;
 
     return false;
   }
@@ -198,7 +205,7 @@ export class IRC extends Network implements IIRC {
   */
   public jump(): void {
     if( this.connected() ) {
-      this.disconnect( "jumping to next available server" );
+      this.disconnect( 'jumping to next available server' );
     }
 
     this.connect();
@@ -238,7 +245,7 @@ export class IRC extends Network implements IIRC {
   public connect(): void {
     if ( !this.enabled() || this.connected() ) {
       if ( this.auto_disabled_timer )
-        this.bot.Logger.info( 'network ' + this.name + ' has been autodisabled. ' + ( this.auto_disabled_timer.waitTime() / 1000 ).toString() + ' seconds left' );
+        this.bot.Logger.info( `network ${ this.name } has been autodisabled. ${ ( this.auto_disabled_timer.waitTime() / 1000 ).toString() } seconds left` );
       return;
     }
     if ( this.connection ) { this.connection.dispose(); }
@@ -246,7 +253,7 @@ export class IRC extends Network implements IIRC {
     this.active_server =  this.next_server();
 
     if ( !this.active_server ) {
-      this.bot.Logger.warn( 'unable to retrieve an active server for ' + this.name );
+      this.bot.Logger.warn( `unable to retrieve an active server for ${ this.name }` );
       return;
     }
 
@@ -256,6 +263,25 @@ export class IRC extends Network implements IIRC {
     this.connection.connect();
   }
 
+  /**
+  * Add a user to the given network
+  * @param <string> name: The name of the user to add
+  * @return <IrcUser>
+  */
+  public addUser( opts: IIrcUserOptions  ): IrcUser {
+    let user: IrcUser;
+
+    if ( this.userExists( opts.name ) ) {
+      user = <IrcUser> this.findUser( opts.name );
+    }
+    else {
+      user = new IrcUser( this, opts );
+
+      this.users.push( user );
+    }
+
+    return user;
+  }
 
   /**
   * Generate a nickname from the main or alternate nicks
@@ -265,7 +291,16 @@ export class IRC extends Network implements IIRC {
   * <> @default false
   * @return <String>
   */
-  public generate_nick( nick: string = this.nick, force: boolean = false ): string {
+  public generate_nick( force?: boolean ): string;
+  public generate_nick( nick?: string, force?: boolean ): string;
+  public generate_nick( nick?: any, force?: boolean ): string {
+    if ( _.isBoolean( nick ) ) {
+      force = nick;
+      nick = this.nick;
+    }
+
+    nick = nick || this.nick;
+
     var newnick: string;
 
     var letters = nick.split('');
@@ -286,19 +321,19 @@ export class IRC extends Network implements IIRC {
       newnick = nick + "_";
     }
 
-    return this.nick = newnick;
+    return newnick;
   }
 
   /**
   * Acquire the next server in the servers array
   * @param <number> index: optional index of server to utilize
   * @return <Server>
-  * @api private
+  * @private
   */
   private next_server( index?: number ): IrcServer {
     var server: IrcServer;
 
-    if( typeof index === "number" &&
+    if( typeof index === 'number' &&
              isFinite( index ) &&
              Math.floor( index ) === index
              && _.inRange( index, 0, this.servers.length ) ) {
@@ -318,7 +353,7 @@ export class IRC extends Network implements IIRC {
         this.auto_disable_times++;
         this.auto_disable_interval = this.auto_disable_interval * this.auto_disable_times || this.auto_disable_interval;
 
-        this.bot.Logger.warn( 'no servers enabled, starting auto disabled timer for ' + Math.round( this.auto_disable_interval / 60 / 1000 ).toString() + ' minutes: ' + this.name );
+        this.bot.Logger.warn( `no servers enabled, starting auto disabled timer for ${ Math.round( this.auto_disable_interval / 60 / 1000 ).toString() } minutes: ${ this.name }` );
 
         this.auto_disabled_timer = this.Timer(
           {
@@ -340,28 +375,42 @@ export class IRC extends Network implements IIRC {
   /**
   * Check if servers are available after network is autodisabled
   * @param <Function> done: The function to call once the checking is complete
-  * @api private
+  * @private
   */
-    private disableCheck( done: Function ): void {
-      this.bot.Logger.info( 'auto disabled timer invoked network server enabling: ' + this.name );
+  private disableCheck( done: Function ): void {
+    this.bot.Logger.info( `auto disabled timer invoked network server enabling: ${ this.name }` );
 
-      this.enable();
+    this.enable();
 
-      _.each( this.servers, ( server )=> {
-        server.enable();
-      });
+    _.each( this.servers, ( server )=> {
+      server.enable();
+    });
 
-      this.connect();
+    this.connect();
 
-      done();
+    done();
 
-      this.auto_disabled_timer = null;
-    }
+    this.auto_disabled_timer = null;
+  }
+
+  /**
+  * setup this networks listeners
+  * @return <void>
+  * @private
+  */
+  private setupListeners(): void {
+    this.bot.on( 'registered::' + this.name , this.onRegistered.bind( this ) );
+
+    this.bot.on( 'connect::'+ this.name, ( network: IRC, server: IrcServer ) => {
+      this._connected = true;
+    });
+  }
 
   /**
   * Called when 'registered' is emitted
   * @param <AnyNet> network: The network that is now registered
   * @return <void>
+  * @private
   */
   private onRegistered( network: AnyNet ): void {
     this.auto_disable_times = 0;
@@ -406,7 +455,9 @@ export class IRC extends Network implements IIRC {
       sasl: null,
       servers: [],
       channels: [],
-      name: null
+      name: null,
+      use_ping_timer: false,
+      reg_listen: null
     };
   }
 }
@@ -435,4 +486,6 @@ interface IRCOptions extends INetworkOptions {
   servers?: IrcServer[];
   trigger?: string;
   user?: string;
+  use_ping_timer?: boolean;
+  reg_listen?: string;
 }

@@ -18,6 +18,11 @@
  import { Server } from './src/networks/base/server';
  import { User } from './src/networks/base/user';
 
+ import { Bind } from './src/messaging/bind';
+ import { Listener } from './src/messaging/listener';
+ import { Message } from './src/messaging/message';
+ import { Router } from './src/messaging/router';
+
 
  import * as Hook from './src/utilities/hook';
  import { Logger } from './src/utilities/logger';
@@ -30,6 +35,8 @@
    Connection,
    HipChat,
    Hook,
+
+   Bind,
 
    IRC,
    IrcChannel,

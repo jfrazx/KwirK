@@ -1,8 +1,9 @@
 
-import { Bot } from './../bot';
-import { IRC, IIrcOptions } from './irc/irc';
-import { Slack, ISlackOptions } from './slack/slack';
 import { HipChat, IHipChatOptions } from './hipchat/hipchat';
+import { Slack, ISlackOptions } from './slack/slack';
+import { IRC, IIrcOptions } from './irc/irc';
+import { Network } from './base/network';
+import { Bot } from './../bot';
 
 export class NetFactory {
 
@@ -25,5 +26,5 @@ export class NetFactory {
   }
 }
 
-export type AnyNet = IRC | Slack | HipChat;
 export type IAnyNet = IIrcOptions | ISlackOptions | IHipChatOptions;
+export type AnyNet = IRC | Slack | HipChat;

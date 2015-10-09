@@ -2,9 +2,11 @@
 *.map
 *.js
 *.log
+*.pid
 .DS_Store
 
 !test/**/*
+!examples/**/*
 
 */.DS_Store
 
