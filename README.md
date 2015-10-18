@@ -20,16 +20,16 @@ can achieve these lofty expectations.
 
 ## Installation
 
-Not yet, just clone the repository and play around.
+Not yet, just clone the repository and play around.  
 
-If you haven't setup your environment:
+If you haven't setup your environment:  
 
-npm install -g typescript tsd
+npm install -g typescript tsd  
 
 npm install  
-tsd install
+tsd install  
 
-( the node.d.ts file I'm using is modified, if it gets overwritten... )
+( the node.d.ts file I'm using is modified, if it gets overwritten... )  
 
 ## Functionality
 
@@ -42,7 +42,7 @@ var bot      = new Kwirk.Bot();
 var freenode = {
   type: 'irc',
   name: 'freenode',
-  enable: true, // defaults to false
+  enable: true, // defaults to true
   servers: [
     {
       host: 'adams.freenode.net',

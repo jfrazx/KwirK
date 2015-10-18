@@ -1,10 +1,10 @@
 
 import { IrcChannel } from './irc_channel';
-import { IrcUser } from './irc_user';
 import { Network } from '../base/network';
+import { IrcUser } from './irc_user';
 import { Bot } from '../../bot';
 
-// this should be more generic 
+// this should be more generic
 
 export module Helpers {
 

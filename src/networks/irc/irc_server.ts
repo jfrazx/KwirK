@@ -1,13 +1,13 @@
 
+import { Server, IServer, IServerOptions } from '../base/server';
 import { IrcChannel } from './irc_channel';
-import { IRC } from './irc';
-import { ITLD } from '../../tld';
-import { Bot } from '../../bot';
-import { Server } from '../base/server';
+import { ITLD } from '../../location/tld';
 import { AnyNet } from '../netfactory';
+import { Bot } from '../../bot';
+import { IRC } from './irc';
 import * as _ from 'lodash';
 
-export class IrcServer extends Server implements IServer {
+export class IrcServer extends Server implements IIRCServer {
 
   public channels: IrcChannel[] = [];
   public host: string;
@@ -32,6 +32,9 @@ export class IrcServer extends Server implements IServer {
     this.network.bot.on( `disconnect::${ this.network.name }::${ this.host }`, this.onDisconnect.bind( this ) );
   }
 
+  /**
+  * @TODO
+  */
   public dispose(): void {
 
   }
@@ -96,20 +99,16 @@ export class IrcServer extends Server implements IServer {
   }
 }
 
-export interface IServer extends ServerOptions {
-  connected(): boolean;
-  enable(): void;
-  disable(): void;
-  disabled(): boolean;
+export interface IIRCServer extends ServerOptions, IServer {
+
 }
 
 export interface IIrcServerOptions extends ServerOptions {
   enable?: boolean;
 }
 
-interface ServerOptions {
+interface ServerOptions extends IServerOptions  {
   host: string;
-  port?: number;
   ssl?: boolean;
   password?: string;
   location?: ITLD;

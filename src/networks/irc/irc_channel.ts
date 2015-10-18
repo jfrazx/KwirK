@@ -1,6 +1,6 @@
 
 import { Channel, IChannel, IChannelOptions } from '../base/channel';
-import { IrcUser } from './irc_user';
+import { IrcUser, IIrcUserOptions } from './irc_user';
 import { IRC } from './irc';
 import * as _ from 'lodash';
 
@@ -16,11 +16,13 @@ export class IrcChannel extends Channel implements IIrcChannel {
   */
   public modes: string[];
 
-  constructor( network: IRC, options: IIrcChannelOptions ) {
+  constructor( public network: IRC, options: IIrcChannelOptions ) {
     super( network, options );
 
     _.merge( this, _.omit( _.defaults( options, this.defaults() ), [ 'name' ] ));
 
+
+    this.network.bot.on('disconnect::' + this.network.name, this.onDisconnect.bind( this ));
   }
 
   /**
@@ -157,6 +159,34 @@ export class IrcChannel extends Channel implements IIrcChannel {
   public dispose(): void {
 
   }
+  public addUser( user: IrcUser ): IrcUser;
+  public addUser( user: IIrcUserOptions ): IrcUser;
+  public addUser( user: any ): IrcUser {
+    if ( !( user instanceof IrcUser ))
+      user = this.network.addUser( user );
+
+    if ( !this.userInChannel( user ) )
+      this.users.push( user );
+
+    return user;
+  }
+
+
+  public userInChannel( user: string ): boolean;
+  public userInChannel( user: IrcUser ): boolean;
+  public userInChannel( user: any ): boolean {
+    let instance: boolean = user instanceof IrcUser;
+
+    return !!_.find( this.users, ( person ) => {
+      return instance ? person == user : user.name == person;
+    });
+  }
+
+  private onDisconnect(): void {
+    this._in_channel = false;
+
+    this.dispose();
+  }
 
   private defaults(): IIrcChannelOptions {
     return {
@@ -169,7 +199,11 @@ export class IrcChannel extends Channel implements IIrcChannel {
 }
 
 interface IIrcChannel extends IIrcChannelOptions, IChannel {
+  addUser( user: IrcUser ): IrcUser;
+  addUser( user: IIrcUserOptions ): IrcUser;
 
+  userInChannel( user: IrcUser ): boolean;
+  userInChannel( user: string ): boolean;
 }
 
 

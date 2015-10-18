@@ -1,12 +1,13 @@
 
-import * as tls from 'tls';
+import { Bot } from '../bot';
 import * as repl from 'repl';
-import * as net from 'net';
 import * as _ from 'lodash';
-import { Bot } from './bot';
+import * as net from 'net';
+import * as tls from 'tls';
 
-
-//TODO maybe utilize ssh2, ....later....
+/**
+* @TODO: https://github.com/arjunmehta/node-columns ?
+*/
 export class KREPL implements IKReplOptions {
 
   public port: number;

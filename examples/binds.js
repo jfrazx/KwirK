@@ -1,5 +1,5 @@
 /**
-* An example of how to setup network channel binding
+* An example of how to setup network channel binding with 3 different IRC networks
 */
 
 // for now, npm package eventually
@@ -9,7 +9,6 @@ var Kwirk = require('../index'),
 var freenode = {
   type: 'irc',
   name: 'freenode',
-  enable: true,
   nick: 'kwirk',
   servers:
   [
@@ -39,8 +38,6 @@ var freenode = {
 var efnet = {
   type: 'irc',
   name: 'efnet',
-  enable: true,
-  reg_listen: 'RPL_ENDOFMOTD',
   servers: [
     {
       host: 'efnet.port80.se',
@@ -59,7 +56,6 @@ var efnet = {
 
 var undernet = {
   type: 'irc',
-  enable: true,
   name: 'undernet',
   servers: [{
     host: 'Chicago.IL.US.Undernet.org',
@@ -68,7 +64,7 @@ var undernet = {
   channels: [{
     name: '#kwirk'
   }],
-  use_ping_timer: true
+  use_ping_timer: true // default is false
 };
 
 bot.addNetwork( freenode )
@@ -81,8 +77,25 @@ bot.addNetwork( freenode )
        source_channel: '#kwirk-e',
        target_network: 'freenode',
        target_channel: '#kwirk',
-       ignore: [/^\+?!\w+/]
-     });
+       // the opposing bind will not be created
+       duplex: false
+     })
+     // reject based on criteria, in this case, possibly command triggers !command
+     .reject( function( message ) {
+       return message.message && message.message.match(/^\+?!\w+/);
+     })
+     // create the opposing bind, a true parameter will create it with the current binds reject, accept and maps
+     .opposing( true )
+     // accept Message based on criteria, all joins and parts will be accepted
+     .accept( function( message ) {
+       return !!message.command.match( /^JOIN|PART$/i );
+     })
+     // chain methods, all messages from user 'Nick', minus any above rejections
+     .accept( function( message ) {
+       return message.nick == 'Nick';
+     })
+     // with false only matched accepts (see above) will get through
+     .unrestricted = false;
    })
    .addNetwork( undernet, function( err, network ) {
      if ( err ) {
@@ -107,6 +120,10 @@ bot.addNetwork( freenode )
        target_network: 'efnet',
        target_channel: '#kwirk-e',
        prefix_source: true
+     })
+     // reject messages based on criteria
+     .reject( function( message ) {
+       return message.nick === 'loudmouth';
      });
    }
 );
@@ -120,10 +137,6 @@ bot.network[ 'freenode' ]
     target_network: 'undernet', // <-- required
     // target channel of the bind
     target_channel: '#kwirk', // <-- required
-    // array of RegExp that will allow the message to pass
-    accept: [], // <-- [] is default
-    // array of RegExp that will cause the message to be ignored
-    ignore: ['/profanity/i'], // <-- [] is default
     // a `true` value will allow the opposing bind to be automatically created with the same criteria
     duplex: true, // <-- true is default
     // a `true` value will allow all messages that are not explicitly ignored to pass
@@ -132,6 +145,34 @@ bot.network[ 'freenode' ]
     prefix_source: false, // <-- default is false
     // define a custom prefix, will be used, even if prefix_source is true
     prefix: "\\freenode/", // <-- default is ''
-});
 
+})
+// get the current binds opposing binding, created if it does not exist
+.opposing()
+
+// transform the Message in some way, possibly good for filtering profanity
+.map( function( message ) {
+  message.message = message.message + ' TRANSFORMED!!';
+})
+.map( function( message ) {
+  message.message = message.message + " TWICE!!";
+})
+.prefix = "\\undernet/";
+
+// lets get this pary started
 bot.start();
+
+/**
+* Upon starting the bot you should see something similar to this (and much more):
+* info: Creating binding for efnet:#kwirk-e <=> freenode:#kwirk
+* info: Creating binding for freenode:#kwirk <=> efnet:#kwirk-e
+* info: Creating binding for undernet:#kwirk <=> efnet:#kwirk-e
+* info: Creating binding for efnet:#kwirk-e <=> undernet:#kwirk
+* info: Creating binding for freenode:#kwirk <=> undernet:#kwirk
+* info: Creating binding for undernet:#kwirk <=> freenode:#kwirk
+*/
+
+
+setTimeout( function() {
+  bot.quit();
+}, 300000 );

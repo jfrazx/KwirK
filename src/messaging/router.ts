@@ -56,41 +56,35 @@ export class Router {
       * @todo I think this needs to be changed
       */
       bindings.forEach( ( bind ) => {
-        if ( message.channel.name === bind.channel ) {
 
-          let match: RegExpExecArray;
-          let joinPart = !!message.command.match( /^JOIN|PART$/i );
+        /**
+        * The bind must be enabled
+        */
+        if ( bind.enabled() ) {
+          if ( message.channel.name === bind.channel ) {
 
-          /**
-          * try to match the incoming message with the ignore or accept RegExp
-          * arrays to determine if we should continue
-          */
-          if ( joinPart || ( match = bind.match( message.message ) ) ) {
-
-            this.bot.Logger.info( `Router binding match found for ${ bind.network }:${ bind.channel } to ${ bind.destination }:${ bind.target } matching: ${ match ? match : 'JOIN/PART' }` );
-
-            message.match = match;
-            message.bind  = bind;
+            let joinPart = !!message.command.match( /^JOIN|PART$/i );
+            let msg: Message = null;
 
             /**
-            * Ignore this message if it comes from a particular user
+            * Let the bind determine if the message is a match
             */
-            if ( !joinPart && bind.ignore_users.indexOf( message.user.name ) >= 0 ) {
-              this.bot.Logger.info( `Ignoring message from ${ message.user.name }: ${ message.message }` );
-              return;
-            }
-
-            /*
-            * determine if our destination network and target channel exists
-            */
-            if ( this.bot.network[ bind.destination ].channelExists( bind.target ) ) {
-              message.formatResponse();
-
-              /**
-              * Finally send the message to the destination target
+            if ( msg = bind.match( message )) {
+              /*
+              * determine if our destination network and target channel exists
               */
-              this.bot.network[ bind.destination ].channel[ bind.target ].say( message.response );
+              if ( this.bot.network[ bind.destination ].channelExists( bind.target ) ) {
+                msg.bind = bind;
+                msg.formatResponse();
+
+                /**
+                * Finally send the message to the destination target
+                */
+                this.bot.network[ bind.destination ].channel[ bind.target ].say( msg.response );
+              }
             }
+
+            this.bot.Logger.info( `Router binding match ${ msg ? 'accepted' : 'rejected' } for ${ bind.network }:${ bind.channel } to ${ bind.destination }:${ bind.target } matching: ${ joinPart ? 'JOIN/PART' : message.message }` );
           }
         }
       });

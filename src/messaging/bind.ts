@@ -1,25 +1,28 @@
 
+import  { Message } from './message';
 import { Bot } from '../bot';
+import * as _ from 'lodash';
 
 export class Bind implements IBind {
   public network: string;
   public channel: string;
   public destination: string;
   public target: string;
+
   public active: boolean;
-  public accept: RegExp[];
-  public accept_users: string[];
-  public ignore: RegExp[];
-  public ignore_users: string[];
   public duplex: boolean;
   public unrestricted: boolean;
-  public user_restrict: boolean;
+
   public prefix_source: boolean;
   public prefix: string;
 
   public static binds: IBinds = {};
 
-  constructor( private bot: Bot, opts: BindOptions ) {
+  private accepts: Function[] = [];
+  private rejects: Function[] = [];
+  private maps: Function[] = [];
+
+  constructor( private bot: Bot, opts: BindOptions, inherit: boolean = false ) {
 
     [ 'source_network',
       'source_channel',
@@ -29,6 +32,9 @@ export class Bind implements IBind {
       if ( opts[ prop ] === undefined || !opts[ prop ].trim().length )
         throw new Error( `a ${ prop.replace( /_/, ' ' ) } must be defined for binding` );
     });
+
+    if ( opts.source_network == opts.target_network && opts.source_channel == opts.target_channel )
+      throw new Error( 'the target must not be the source' );
 
     this.active = opts.active == undefined ? true : !!opts.active;
 
@@ -47,15 +53,11 @@ export class Bind implements IBind {
     this.channel       = opts.source_channel;
     this.destination   = opts.target_network;
     this.target        = opts.target_channel;
-    this.accept        = this.conditionals( opts.accept );
-    this.accept_users  = opts.accept_users || [];
-    this.ignore        = this.conditionals( opts.ignore );
-    this.ignore_users  = opts.ignore_users || [];
+
     this.duplex        = opts.duplex === undefined ? true : !!opts.duplex;
     this.unrestricted  = opts.unrestricted === undefined ? true : !!opts.unrestricted;
     this.prefix_source = opts.prefix_source === undefined ? false : !!opts.prefix_source;
-    this.prefix        = opts.prefix || ( this.prefix_source ? `[${ this.network.toUpperCase() }::${ this.channel.toUpperCase() }]` : '' );
-    this.user_restrict = opts.user_restrict === undefined ? !!this.accept_users.length : !!opts.user_restrict;
+    this.prefix        = opts.prefix || ( this.prefix_source ? `[${ this.network }::${ this.channel }]` : '' );
 
 
     this.bot.Logger.info( `Creating binding for ${ this.network }:${ this.channel } <=> ${ this.destination }:${ this.target }` );
@@ -64,98 +66,191 @@ export class Bind implements IBind {
 
     // create the opposing bind if it does not exist
     if ( this.duplex && !Bind.bindExists( this.destination, this.target, this.network, this.channel ) ) {
-      new Bind( bot, {
-          source_network: this.destination,
-          source_channel: this.target,
-          target_network: this.network,
-          target_channel: this.channel,
-          active: this.active,
-          accept: opts.accept,
-          accept_users: this.accept_users,
-          ignore: opts.ignore,
-          ignore_users: this.ignore_users,
-          duplex: this.duplex,
-          unrestricted: this.unrestricted,
-          user_restrict: this.user_restrict,
-          prefix_source: this.prefix_source,
-          prefix: this.prefix
-        }
-      );
+      this.createOpposing( inherit );
     }
   }
 
   /**
-  * Find the current binds opposite
+  * Find the current binds opposing or create it if it does not exist
+  * @param <boolean> inherit: Match the existing accepts and rejects and maps
   * @return <Bind>
   */
-  public opposite(): Bind {
-    return Bind.findBind( this.destination, this.target, this.network, this.channel );
+  public opposing( inherit: boolean = false ): Bind {
+    let bind: Bind;
+    if ( !( bind = Bind.findBind( this.destination, this.target, this.network, this.channel ) ))
+        bind = this.createOpposing( inherit );
+
+    return bind;
   }
 
   /**
-  * Match a message against the ignore/accept RegExp arrays
-  * @param <string> message: The message to try and match
-  * @return <boolean | RegExpExecArray>
+  * Add a function which may accept a message based on certain criteria
+  * @param <Function> callback: The callback
+  * @return <Bind>
   */
-  public match( message: string ): RegExpExecArray {
-    if ( !message ) return;
+  public accept( callback: Function ): Bind {
+    if ( typeof callback != 'function' )
+      throw new Error( 'You must pass a function to accept' );
 
-    for ( let reg in this.ignore ) {
-      if ( this.ignore[ reg ].exec( message ) ) {
-        this.bot.Logger.info( `Ignoring message '${ message }' matching ${ this.ignore[ reg ] }` );
-        return;
-      }
-    };
+    this.accepts.push( callback );
 
-    for ( let reg in this.accept ) {
-      let match: RegExpExecArray;
-      if ( match = this.ignore[ reg ].exec( message ) ) {
-        this.bot.Logger.info( `Accepting message '${ message }' matching ${ this.accept[ reg ] }` );
-        return match;
-      }
-    }
-
-    if ( this.unrestricted ) {
-      this.bot.Logger.info( `Unrestricted message accepted: ${ message }` );
-      return /.*/.exec( message );
-    }
+    return this;
   }
 
   /**
-  * Helper for turning an array of strings into RegExp
-  * @param <string[]> conditions: The array of strings to Transform
-  * @return <RegExp[]>
-  * @private
+  * Add a function which may reject a message based on certain criteria
+  * @param <Function> callback: The callback
+  * @return <Bind>
   */
-  private conditionals( conditions: string[] ): RegExp[] {
-    let result: RegExp[] = [];
+  public reject( callback: Function ): Bind {
+    if ( typeof callback != 'function' )
+      throw new Error( 'You must pass a function to reject' );
 
-    if ( !conditions ) return result;
+    this.rejects.push( callback );
 
-    for ( let condition in conditions ) {
-      try {
-        result.push( this.toRegExp( conditions[ condition ] ));
-      }
-      catch ( e ) {
-        this.bot.Logger.error( `network ${ this.network } channel ${ this.channel } binding regular expression ${ conditions[ condition ] } creation failed` );
-      }
-    }
-
-    return result;
+    return this;
   }
 
   /**
-  * Create a regular expression from a string
-  * @param <string | RegExp> reg: The string to turn into a RegExp
-  * @return <RegExp>
-  * @private
+  * Add a function which may map message details
+  * @param <Function> callback: The callback
+  * @return <Bind>
   */
-  private toRegExp( reg: string ): RegExp;
-  private toRegExp( reg: RegExp ): RegExp;
-  private toRegExp( reg: any ): RegExp {
-    let flags = reg.toString().replace( /.*\/([gimy]*)$/, '$1' );
-    let pattern = reg.toString().replace( new RegExp( '^/(.*?)/'+flags+'$' ), '$1' );
-    return new RegExp( pattern, flags );
+  public map( callback: Function ): Bind {
+    if ( typeof callback != 'function' )
+      throw new Error( 'You must pass a function to map' );
+
+    this.maps.push( callback );
+
+    return this;
+  }
+
+  /**
+  * Match or reject a message based on reject and accept functions
+  * @param <Message> message: The message to check
+  * @return <Message>
+  */
+  public match( message: Message ): Message {
+    let matched: any;
+    try {
+      if ( matched = _.any( this.rejects, ( callback ) => {
+        return callback.call( null, message );
+      })) {
+        return undefined;
+      }
+
+      matched = _.any( this.accepts, ( callback ) => {
+        return callback.call( null, message );
+      });
+    }
+    catch ( e ) {
+      this.bot.Logger.error( `Bind matching error for ${ this.network }:${ this.channel } <=> ${ this.destination }:${ this.target } : ${ e }` );
+
+      return undefined;
+    }
+
+    if ( matched || ( !this.rejects.length && !this.accepts.length ) || this.unrestricted )
+      return this.transform( message );
+
+    return undefined;
+  }
+
+  /**
+  * Automatically disables the bind and removes it from the static binds array
+  * @return <Bind>
+  */
+  public release(): Bind {
+    this.bot.Logger.info( `Releasing binding for ${ this.network }:${ this.channel } <=> ${ this.destination }:${ this.target }` );
+
+    this.disable();
+
+    Bind.removeBind( this );
+
+    return this;
+  }
+
+  /**
+  * Enable the bind
+  * @param <boolean> other: If true will enable opposing bind as well
+  * @return <void>
+  */
+  public enable( other: boolean = false ): void {
+    this.active = true;
+
+    other && this.opposing().enable( false );
+  }
+
+  /**
+  * Disable the bind
+  * @param <boolean> other: If true will disable opposing bind as well
+  * @return <void>
+  */
+  public disable( other: boolean = false ): void {
+    this.active = false;
+
+    other && this.opposing().disable( false );
+  }
+
+  /**
+  * Is this bind enabled?
+  * @return <boolean>
+  */
+  public enabled(): boolean {
+    return this.active;
+  }
+
+  /**
+  * Is this bind disabled?
+  * @return <boolean>
+  */
+  public disabled(): boolean {
+    return !this.active;
+  }
+
+  /**
+  * Create an opposing bind from the current bind
+  * @param <boolean> inherit: Match the existing accepts and rejects and maps
+  * @return <Bind>
+  */
+  private createOpposing( inherit: boolean = false ): Bind {
+    let bind = new Bind( this.bot, {
+      source_network: this.destination,
+      source_channel: this.target,
+      target_network: this.network,
+      target_channel: this.channel,
+
+      active: this.active,
+      duplex: this.duplex,
+      unrestricted: this.unrestricted,
+
+      prefix_source: this.prefix_source,
+      prefix: this.prefix
+    });
+
+    if ( inherit ) {
+      bind.accepts = this.accepts;
+      bind.rejects = this.rejects;
+      bind.maps = this.maps;
+    }
+
+    return bind;
+  }
+
+  /**
+  * Transform a message based on map functions
+  * @param <Message> message: The message to transform
+  * @return <Message>
+  */
+  private transform( message: Message ): Message {
+    var msg = Object.create( Object.getPrototypeOf( message ));
+
+    _.merge( msg, message );
+
+    _.each( this.maps, ( callback ) => {
+      callback.call( null, msg );
+    });
+
+    return msg;
   }
 
   /**
@@ -194,7 +289,7 @@ export class Bind implements IBind {
       }
     }
 
-    return;
+    return undefined;
   }
 
   /**
@@ -223,42 +318,43 @@ export class Bind implements IBind {
 }
 
 
-interface IBind {
+interface IBind extends Options {
   network: string;
   channel: string;
   destination: string;
   target: string;
-  active: boolean;
-  accept: RegExp[];
-  accept_users: string[];
-  ignore: RegExp[];
-  ignore_users: string[];
-  duplex: boolean;
-  unrestricted: boolean;
-  user_restrict?: boolean;
-  prefix_source: boolean;
-  prefix: string;
 
-  match( message: string ): RegExpExecArray;
-  opposite(): Bind;
+  match( message: Message ): Message;
+
+  opposing( create?: boolean ): Bind;
+
+  accept( callback: Function ): Bind;
+  reject( callback: Function ): Bind;
+  map( callback: Function ): Bind;
+
+  enabled(): boolean;
+  disabled(): boolean;
+  enable( other?: boolean ): void;
+  disable( other?: boolean ): void;
+
+  release(): Bind;
 }
 
 export interface BindOptions extends IBindOptions {
   source_network: string
 }
 
-export interface IBindOptions {
+export interface IBindOptions  extends Options {
   source_channel: string,
   target_network: string,
   target_channel: string,
+}
+
+interface Options {
   active?: boolean,
-  accept?: string[],
-  accept_users?: string[],
-  ignore?: string[],
-  ignore_users?: string[],
   duplex?: boolean,
   unrestricted?: boolean,
-  user_restrict?: boolean,
+
   prefix_source?: boolean,
   prefix?: string,
 }

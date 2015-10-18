@@ -11,7 +11,8 @@ describe('Bot', function(){
       var bot = new Bot(
         {
           networks: [{
-            network: 'freenode',
+            type: 'irc',
+            name: 'freenode',
             enable: false,
             servers: [{
               host: 'bradbury.freenode.net',

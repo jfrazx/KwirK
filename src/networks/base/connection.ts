@@ -1,10 +1,10 @@
 
-import { Bot } from '../../bot';
-import { Server } from './server';
 import { AnyNet } from '../netfactory';
-import { Socket } from 'net';
-import { TLSSocket } from 'tls';
 import { Transform } from 'stream';
+import { Server } from './server';
+import { TLSSocket } from 'tls';
+import { Bot } from '../../bot';
+import { Socket } from 'net';
 
 export abstract class Connection implements IConnection {
 
@@ -44,6 +44,8 @@ export abstract class Connection implements IConnection {
   public abstract connect(): void;
 
   public abstract dispose(): void;
+
+  public abstract end(): void;
 
   /**
   * End socket connection and listeners

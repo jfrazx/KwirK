@@ -1,7 +1,7 @@
 
-import { IRC } from './irc'
-import { Constants } from '../../constants';
+import { Constants } from '../../constants/constants';
 import { Message } from '../../messaging/message';
+import { IRC } from './irc';
 import * as _ from 'lodash';
 
 export class Handler {
@@ -27,12 +27,19 @@ export class Handler {
       }
     });
 
-    let once = ( this.network.reg_listen || 'MODE' ) + '::' + this.network.name;
+    /**
+    * Setting the event to listen that will signal IRCD registration is complete
+    */
+    let once = ( this.network.reg_listen || 'RPL_ENDOFMOTD' ) + '::' + this.network.name;
 
-    this.network.bot.on( 'UNKNOWN::'+ this.network.name, this.UNKNOWN.bind( this ) );
     this.network.bot.once( once, ( message: any ) => {
       this.network.bot.emit( 'registered::'+ this.network.name, message.network, message.network.active_server );
-    } );
+    });
+
+    /**
+    * If we receive unknown emits
+    */
+    this.network.bot.on( 'UNKNOWN::'+ this.network.name, this.UNKNOWN.bind( this ) );
   }
 
   /**
@@ -104,7 +111,7 @@ export class Handler {
   * @return <void>
   */
   public ERR_NICKNAMEINUSE( message: any ): void {
-    if (this.network.connection.registered )
+    if ( this.network.connection.registered )
       return;
 
     let use_nick: string;
@@ -290,9 +297,7 @@ export class Handler {
     });
 
     names.forEach( ( name: string ) => {
-      let user = this.network.addUser( { name: name } );
-
-      channel.users.push( user );
+      channel.addUser( { name: name } );
     });
   }
 
@@ -601,13 +606,11 @@ export class Handler {
     }
     // someone else joined the channel
     else {
-      message.user = this.network.addUser({
+      message.user = message.channel.addUser({
           name: nick,
           ident: ident,
           hostname: hostname
       });
-
-      this.network.channel[ message.channel.name ].users.push( message.user );
     }
 
     this.route( message );

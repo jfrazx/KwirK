@@ -809,7 +809,7 @@ export module Constants {
     PRIVMSG = <any>'PRIVMSG',
     MODE    = <any>'MODE',
 
-    
+
     QUOTE_PONG = 513
   }
 

@@ -40,15 +40,16 @@ export class Message {
   * @return <void>
   */
   public formatResponse(): void {
+    let nick = this.user ? this.user.name : this.nick;
 
     switch ( this.command ) {
 
       case 'JOIN':
-        this.response = `\026${ this.user.name } has joined ${ this.channel.name } on ${ this.channel.network.name }\026`;
+        this.response = `${ nick } has joined ${ this.channel.name } on ${ this.channel.network.name }`;
 
         break;
       case 'PART':
-        this.response = `\026${ this.user.name } has left ${ this.channel.name } on ${ this.channel.network.name }\026`;
+        this.response = `${ nick } has left ${ this.channel.name } on ${ this.channel.network.name }`;
 
         break;
 
@@ -57,7 +58,7 @@ export class Message {
         break;
 
       default:
-        this.response = `${ this.bind.prefix }<${ this.user.name }> ${ this.message }`;
+        this.response = `${ this.bind.prefix }<${ nick }> ${ this.message }`;
     }
   }
 

@@ -30,9 +30,7 @@ export abstract class Channel extends Target implements IChannel {
   public removeUser<T extends User>( nick: T ): void;
   public removeUser( nick: string ): void;
   public removeUser( nick: any ): void {
-    let instance = false;
-    if ( nick instanceof User )
-      instance = true;
+    let instance = nick instanceof User;
 
     _.remove( this.users, ( user ) => {
       return instance ? user == nick : user.name === nick;

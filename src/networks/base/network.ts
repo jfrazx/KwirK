@@ -1,5 +1,5 @@
 
-import { Bind, IBinds, IBindOptions } from '../../messaging/bind';
+import { Bind, BindOptions, IBindOptions } from '../../messaging/bind';
 import { Timer, ITimerOptions } from '../../utilities/timer';
 import { AnyNet, IAnyNet } from '../netfactory';
 import { Connection } from './connection';
@@ -31,16 +31,16 @@ export abstract class Network implements INetwork {
       throw new Error( 'a network name must be supplied' );
 
     this.name = options.name.toLowerCase();
-    this._enable = !!options.enable;
+    this._enable = options.enable === undefined ? true : !!options.enable;
 
   }
 
-  public bind( options: IBindOptions ): Bind {
-    let opts: any = options;
+  public bind( options: IBindOptions, inherit: boolean = false ): Bind {
+    let opts: BindOptions = <BindOptions> options;
 
     opts.source_network = this.name;
 
-    return new Bind( this.bot, opts );
+    return new Bind( this.bot, opts, inherit );
   }
 
   /**

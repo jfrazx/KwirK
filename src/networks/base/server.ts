@@ -15,7 +15,7 @@ export abstract class Server implements IServer {
   * @return <void>
   */
   public enable(): void {
-    this.network.bot.Logger.info( 'enabling server ' + this.host + ' on ' + this.network.name );
+    this.network.bot.Logger.info( `enabling server ${ this.host } on ${ this.network.name }` );
 
     this._enable = true;
   }
@@ -75,5 +75,5 @@ export interface IServer extends IServerOptions {
 
 export interface IServerOptions {
   host: string;
-  port: number;
+  port?: number;
 }

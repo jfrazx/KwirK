@@ -6,6 +6,7 @@ import { Server } from './networks/base/server';
 import { Logger } from './utilities/logger';
 import { Router } from './messaging/router';
 import { Timer } from './utilities/timer';
+var Color = require( './utilities/color' );
 import * as _ from 'lodash';
 
 export class Bot extends EventEmitter implements IBot {
@@ -21,18 +22,12 @@ export class Bot extends EventEmitter implements IBot {
 
       this.setMaxListeners( 0 );
 
-      // assign defaults
-      // this.config.defaults = this.config.defaults ? _.defaults( this.config.defaults, this.defaults() ) : this.defaults();
-
-      // assign network default values and add network to array
-      // _.each( this.config.networks, ( network: IBotNetworkConfiguration, index: any ) => {
-      //
-      //   network.options = network.options ? _.defaults( network.options, this.config.defaults ) : this.config.defaults;
-      //
-      //   this.config.networks[ index ] = network;
-      //
-      //   this.addNetwork( network );
-      // });
+      // for now, eventually we will daemonize2
+      process.on( 'SIGINT',  () => {
+        this.quit( () => {
+          process.exit( 0 );
+        });
+      });
 
       this.setupListeners();
 
@@ -118,7 +113,7 @@ export class Bot extends EventEmitter implements IBot {
     public getNetwork( name: string ): AnyNet {
       return _.find( this.network , ( netname: string, network: AnyNet ) => {
         return netname == name;
-      } );
+      });
     }
 
     /**
@@ -188,6 +183,7 @@ export class Bot extends EventEmitter implements IBot {
     /**
     * Stop a network
     * @param <AnyNet> network: The network to disconnect
+    * @param <string> message: The message to send to the network
     * @return <void>
     */
     public stop( network: AnyNet, message?: string ): void {
@@ -196,13 +192,26 @@ export class Bot extends EventEmitter implements IBot {
 
     /**
     * Stop all connections and end the program
+    * @param <string> message: A string message to send with the disconnect
+    * @param <Function> callback: Optional callback
     * @return <void>
     * TODO: end krepl and http as well when implemented
     */
-    public quit(): void {
+    public quit( callback?: Function ): void;
+    public quit( message: string, callback?: Function ): void;
+    public quit( message: any, callback?: Function ): void {
+      if ( typeof message == 'function' ) {
+        callback = message;
+        message = undefined;
+      }
+
+      this.emit( 'quit', message );
+
       _.each( _.keys( this.network ), ( network ) => {
-        this.stop( this.network[ network ] );
+        this.stop( this.network[ network ], message );
       });
+
+      callback && callback();
     }
 
     /**
@@ -225,7 +234,7 @@ export class Bot extends EventEmitter implements IBot {
     * @private
     */
     private onConnect( network: AnyNet, server: Server ): void {
-      this.Logger.info( 'connected to nework ' + network.name + ' on ' + server.host + ':' + server.port.toString() );
+      this.Logger.info( `connected to nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
     }
 
     /**
@@ -236,7 +245,7 @@ export class Bot extends EventEmitter implements IBot {
     * @private
     */
     private onDisconnect( network: AnyNet, server: Server ): void {
-      this.Logger.info( 'disconnected from ' + network.name + ' and ' + server.host + ':' + server.port.toString() );
+      this.Logger.info( `disconnected from nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
     }
 
     /**
@@ -257,7 +266,7 @@ export class Bot extends EventEmitter implements IBot {
     * @private
     */
     private onRegistered( network: AnyNet, server: Server ): void {
-      this.Logger.info( 'registered ' + network.name + ' on ' + server.host + ':' + server.port.toString() );
+      this.Logger.info( `registered nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
     }
   }
 
@@ -272,5 +281,7 @@ export interface IBot {
 
   start( network?: AnyNet ): void;
   stop( network: AnyNet ): void;
+  quit( callback?: Function ): void;
+  quit( message: string, callback?: Function ): void;
   quit(): void;
 }

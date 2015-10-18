@@ -1,8 +1,8 @@
 
-import { Connection } from '../base/connection';
+import { Connection, IConnection } from '../base/connection';
+import { Constants } from '../../constants/constants';
 import { Timer } from '../../utilities/timer';
 import * as Hook from '../../utilities/hook';
-import { Constants } from '../../constants';
 import { IrcServer } from './irc_server';
 import { Handler } from './handler';
 import { Bot } from '../../bot';
@@ -11,7 +11,7 @@ import { IRC } from './irc';
 import * as tls  from 'tls';
 import * as _ from 'lodash';
 
-export class IrcConnection extends Connection {
+export class IrcConnection extends Connection implements IIrcConnection {
 
   public reconnect_attempts = 0;
   public request_disconnect: boolean;
@@ -96,15 +96,13 @@ export class IrcConnection extends Connection {
   * @param <string> message: The quit message to send
   * @return <void>
   */
-  public disconnect( message?: string ): void {
+  public disconnect( message: string = this.network.quit_message ): void {
     if ( !this.connected() && !this.socket ) return;
-
-    if ( message === undefined )
-      message = this.network.quit_message;
 
     this.request_disconnect = true;
 
     this.send( 'QUIT : ' + message );
+    this.send( null );
 
     process.nextTick( this.end.bind( this ) );
   }
@@ -207,9 +205,9 @@ export class IrcConnection extends Connection {
   }
 
   public end(): void {
-    this.disposeSocket();
     this.network.clearTimers();
     this.buffer.unpipe( this.socket );
+    this.disposeSocket();
   }
 
   // more on this later...
@@ -226,7 +224,6 @@ export class IrcConnection extends Connection {
   private onClose( error: boolean ): void {
 
     this._connected = false;
-    this.registered = false;
 
     if ( !this.request_disconnect )
       this.reconnect();
@@ -460,4 +457,8 @@ export class IrcConnection extends Connection {
       } );
     }
   }
+}
+
+interface IIrcConnection extends IConnection {
+
 }
