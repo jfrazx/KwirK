@@ -1,3 +1,4 @@
+'use strict';
 
 export abstract class Target implements ITarget {
 

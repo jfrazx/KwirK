@@ -1,13 +1,13 @@
 
 import { User, IUserOptions, IUser } from '../base/user';
-import { IRC } from './irc';
+import { Irc } from './irc';
 
 export class IrcUser extends User implements IIrcUser {
 
   public ident: string;
   public hostname: string;
 
-  constructor( network: IRC, options?: IIrcUserOptions ) {
+  constructor( network: Irc, options?: IIrcUserOptions ) {
     super( network, options );
 
     this.ident = options.ident || '';

@@ -5,6 +5,7 @@
 *.pid
 
 .DS_Store
+todo
 
 */.DS_Store
 

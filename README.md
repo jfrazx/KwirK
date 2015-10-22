@@ -3,8 +3,6 @@
 
 KwirK aims to be a sophisticated, multi-network, multi-protocol utility bot that can
 act as a bridge between popular services.
-This project is in its infancy and has an enormous amount of work to be done before it
-can achieve these lofty expectations.
 
 ## Goals
 
@@ -16,11 +14,16 @@ can achieve these lofty expectations.
 - ability to link multiple bots  
 - eggdrop like command console, but not with telnet  
 - plugin system  
+- translation, in channel, channel to channel, and pm to pm as proxy
 - much more, this list will certainly expand  
 
 ## Installation
 
-Not yet, just clone the repository and play around.  
+npm install kwirk [--save]
+
+or  
+
+clone the repo: git clone https://github.com/jfrazx/KwirK/
 
 If you haven't setup your environment:  
 
@@ -33,16 +36,18 @@ tsd install
 
 ## Functionality
 
-The bot, with the below example, will join the given networks and channels. Basic IRC channel binding has been introduced. Check the examples for details.
+IRC is mostly stable, but with little other than providing building blocks.
+Emitted events will (eventually) be catalogued appropriately. In the interim take a look at the defined IRC Constants (/src/constants/constants.ts)
+IRC to IRC binding appears to be working well.
 
 ## Example
 ```
-var Kwirk    = require( './index' );
-var bot      = new Kwirk.Bot();
+var Kwirk    = require( 'kwirk' )
+  , bot      = new Kwirk.Bot();
+
 var freenode = {
   type: 'irc',
   name: 'freenode',
-  enable: true, // defaults to true
   servers: [
     {
       host: 'adams.freenode.net',
@@ -58,8 +63,7 @@ var freenode = {
   ],
   channels: [
     {
-      name: '#kwirk',
-      modes: [ 'n', 't', 's', 'p' ]
+      name: '#bot-playground',
     }
   ]
 };
@@ -67,7 +71,6 @@ var freenode = {
 var efnet = {
   type: 'irc',
   name: 'efnet',
-  enable: true,
   servers: [
     {
       host: 'efnet.port80.se',
@@ -79,17 +82,10 @@ var efnet = {
   channels: [
     {
       name: '#kwirk',
-      modes: [ 'n', 't', 'p' ], // channel modes to enforce
-      password: 'mychannelkey', // channel key
-      key: 'myencryptionkey'    // encryption key
     }
   ],
   nick: 'KwirKBot',      // defaults to 'kwirk'
-  modes: [ 'x', 'i' ],   // defaults to [ 'i' ]
 }
-
-bot.addNetwork( freenode );
-bot.addNetwork( efnet );
 
 var server = {
   host: 'irc.choopa.net',
@@ -97,7 +93,30 @@ var server = {
   ssl: true
 };
 
-bot.network[ 'efnet' ].addServer( server );
+bot
+.addNetwork( freenode )
+.addNetwork( efnet, function( err, network ) {
+  network.addServer( server, function( err, server ) {
+    server.disable();
+  });
+});
+
+// this is binding to the efnet network and the #kwirk channel
+bot.network['efnet'].bind({
+  source_channel: '#kwirk',
+  // the target will be freenode network and the #bot-playground channel
+  target_network: 'freenode',
+  target_channel: '#bot-playground',
+  prefix_source: true
+})
+
+// reject, accept and map will all be passed a message object
+.reject( function( message ) {
+  return message.content.match(/^\+?!\w+/);
+})
+// opposing bind will be created, true value will inherit rejects, accepts and maps
+.opposing( true )
+.prefix_source = false;
 
 bot.start();
 
@@ -105,7 +124,14 @@ bot.start();
 ## Contributing
 
 1. Fork it ( https://github.com/jfrazx/KwirK/fork )
-2. Create your feature branch (git checkout -b my-new-feature)
-3. Commit your changes (git commit -am 'Add some feature')
-4. Push to the branch (git push origin my-new-feature)
-5. Create a new Pull Request
+2. Adhere to naming conventions (transition in progress)
+  - Indentation is two (2) spaces
+  - File name to match Object/Class name in lowercase and underscored (irc_server.ts for IrcServer)
+  - Treat acronyms in object names as words (Irc instead of IRC)
+  - Variables to be lowercase, _ delimited words (my_var)
+  - Function names to be camelCase, starting with lowercase (myFunction)
+  - Class names to be CamelCase, starting with uppercase (MyClass)
+3. Create your feature branch (git checkout -b my-new-feature)
+4. Commit your changes (git commit -am 'Add some feature')
+5. Push to the branch (git push origin my-new-feature)
+6. Create a new Pull Request (not to master)

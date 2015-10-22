@@ -12,6 +12,8 @@ export abstract class Channel extends Target implements IChannel {
 
   constructor( public network: AnyNet, options: IChannelOptions ) {
     super( options.name );
+
+    this.network.bot.Logger.info( `Creating new channel ${ this.name } on network ${ this.network.name }` );
   }
 
   /**

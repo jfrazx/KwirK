@@ -118,10 +118,18 @@ Hash( exports ).forEach( function( f: any, name: string ) {
 exports.global = function() {
   var t: any, irc = {};
 
-  String.prototype.__defineGetter__( 'irc', function() {
+  /**
+  * TypeScript likes defineProperty much better than __defineGetter__
+  */
+  Object.defineProperty( String.prototype, 'irc', { get: function() {
     t = this;
     return irc;
-  });
+  }});
+
+  // String.prototype.__defineGetter__( 'irc', function() {
+  //   t = this;
+  //   return irc;
+  // });
 
   var addGlobalGetters = function( f1: any, name: string ) {
     Hash( exports ).exclude( [ name ] ).forEach( function( f2: any, name: string ) {
@@ -134,7 +142,7 @@ exports.global = function() {
   };
 
   Hash( exports ).exclude( [ 'global' ] ).forEach( function( f1: any, name: string ) {
-    var f = function() { return f1(t); };
+    var f = function() { return f1( t ); };
     addGlobalGetters( f, name );
     irc[ name ] = f;
   });

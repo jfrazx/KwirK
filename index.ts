@@ -11,7 +11,7 @@
  import { IrcChannel } from './src/networks/irc/irc_channel';
  import { IrcServer } from './src/networks/irc/irc_server';
  import { IrcUser } from './src/networks/irc/irc_user';
- import { IRC } from './src/networks/irc/irc';
+ import { Irc } from './src/networks/irc/irc';
 
  import { NetFactory } from './src/networks/netfactory';
 
@@ -46,7 +46,7 @@
 
    Bind,
 
-   IRC,
+   Irc,
    IrcChannel,
    IrcConnection,
    IrcServer,

@@ -1,3 +1,4 @@
+'use strict';
 
 import { Network, INetwork, INetOptions, INetworkOptions } from '../base/network';
 import { IrcChannel, IIrcChannelOptions } from './irc_channel';
@@ -8,10 +9,10 @@ import { Timer } from '../../utilities/timer';
 import { AnyNet } from '../netfactory';
 import { ISasl } from './sasl/sasl';
 import { Bot } from '../../bot';
-import { IRCD } from './ircd';
+import { Ircd } from './ircd';
 import * as _ from 'lodash';
 
-export class IRC extends Network implements IIRC {
+export class Irc extends Network implements IIRC {
 
   public servers: IrcServer[] = [];
   public channels: IrcChannel[] = [];
@@ -19,21 +20,22 @@ export class IRC extends Network implements IIRC {
   public connection: IrcConnection = null;
   public connection_attempts: number;
   public active_server: IrcServer = null;
-  public ircd: IRCD;
+  public ircd: Ircd;
   public name: string;
   public nick: string;
-  public altnick: string;
+  public alt_nick: string;
   public quit_message: string;
   public encoding: string;
   public reject_invalid_certs: boolean;
   public password: string;
-  public user: string;
-  public realname: string;
+  public user_name: string;
+  public real_name: string;
   public modes: string[];
   public options: IIrcOptions;
   public sasl: ISasl;
   public use_ping_timer: boolean;
   public reg_listen: string;
+  public ping_delay: number;
 
   private _index = 0;
   private auto_disabled_timer: Timer;
@@ -59,7 +61,7 @@ export class IRC extends Network implements IIRC {
       this.addChannel( channel );
     });
 
-    this.ircd = new IRCD( this );
+    this.ircd = new Ircd( this );
 
 
     this.setupListeners();
@@ -70,7 +72,7 @@ export class IRC extends Network implements IIRC {
   * @param <IServer> serve: The options for configuring the new server
   * @return <void>
   */
-  public addServer( serve: IIrcServerOptions, callback?: Function ): IRC {
+  public addServer( serve: IIrcServerOptions, callback?: Function ): Irc {
     var server = new IrcServer( this, serve );
 
     if ( this.serverExists( server.host ) ) {
@@ -114,20 +116,21 @@ export class IRC extends Network implements IIRC {
   * @todo change this to return IRC, for consistencys
   */
   public addChannel( chan: IIrcChannelOptions, callback?: Function ): IrcChannel {
-    var channel = new IrcChannel( this, chan );
+    let channel: IrcChannel;
 
-    if ( this.channel[ channel.name ] ) {
-      channel = this.channel[ channel.name ];
+    if ( this.channel[ chan.name ] ) {
+      channel = this.channel[ chan.name ];
 
       this.bot.emit( `channel_exists::${ this.name }`, this, channel );
     }
     else {
+      channel = new IrcChannel( this, chan );
+
       this.channel[ channel.name ] = channel;
       this.channels.push( channel );
     }
 
-    if ( callback )
-      callback( null, channel );
+    callback && callback( null, channel );
 
     return channel
   }
@@ -140,10 +143,7 @@ export class IRC extends Network implements IIRC {
   public channelExists( channel: IrcChannel ): boolean;
   public channelExists( name: string ): boolean;
   public channelExists( name: any ): boolean {
-    var instance = false;
-
-    if ( name instanceof IrcChannel )
-      instance = true;
+    var instance = name instanceof IrcChannel;
 
     return !( !_.find( this.channels, ( channel: IrcChannel )=> {
       return name === ( instance ? channel : channel.name );
@@ -168,9 +168,9 @@ export class IRC extends Network implements IIRC {
   * @return <void>
   */
   public removeServerByHost( host: string ): void {
-    this.removeServer( _.find( this.servers, ( server )=> {
+    this.removeServer( _.find( this.servers, ( server ) => {
       return server.host === host;
-    } ) );
+    }));
   }
 
   /**
@@ -208,7 +208,7 @@ export class IRC extends Network implements IIRC {
       this.disconnect( 'jumping to next available server' );
     }
 
-    this.connect();
+    process.nextTick( this.connect.bind( this ) );
   }
 
   public disconnect(): void;
@@ -222,8 +222,7 @@ export class IRC extends Network implements IIRC {
     }
 
     if ( this.disconnected() ) {
-        if ( callback )
-          callback( null );
+        callback && callback( null );
         return;
     }
 
@@ -232,10 +231,11 @@ export class IRC extends Network implements IIRC {
       return;
     }
 
+    this.bot.Logger.info( `Disconnecting network ${ this.name }` );
+
     this.connection.disconnect( message );
 
-    if ( callback )
-      callback( null );
+    callback && callback( null );
   }
 
   /**
@@ -248,7 +248,6 @@ export class IRC extends Network implements IIRC {
         this.bot.Logger.info( `network ${ this.name } has been autodisabled. ${ ( this.auto_disabled_timer.waitTime() / 1000 ).toString() } seconds left` );
       return;
     }
-    if ( this.connection ) { this.connection.dispose(); }
 
     this.active_server =  this.next_server();
 
@@ -257,8 +256,18 @@ export class IRC extends Network implements IIRC {
       return;
     }
 
-    if ( !this.connection )
-      this.connection = new IrcConnection( this, this.active_server );
+    if ( this.connection ) {
+      this.connection.dispose();
+      this.connection.server = this.active_server;
+    }
+    else {
+      this.connection = new IrcConnection( this,
+        this.active_server,
+        {
+          ping_delay: this.ping_delay 
+        }
+      );
+    }
 
     this.connection.connect();
   }
@@ -294,16 +303,16 @@ export class IRC extends Network implements IIRC {
   public generate_nick( force?: boolean ): string;
   public generate_nick( nick?: string, force?: boolean ): string;
   public generate_nick( nick?: any, force?: boolean ): string {
+    let newnick: string;
+    let letters: string[];
+
     if ( _.isBoolean( nick ) ) {
       force = nick;
       nick = this.nick;
     }
 
     nick = nick || this.nick;
-
-    var newnick: string;
-
-    var letters = nick.split('');
+    letters = nick.split('');
 
     while ( letters.indexOf( '?' ) >= 0 ) {
       letters[ letters.indexOf( '?' ) ] = String.fromCharCode( 97 + Math.floor( Math.random() * 26 ) );
@@ -312,8 +321,8 @@ export class IRC extends Network implements IIRC {
     newnick = letters.join( '' ).replace( /[^0-9a-zA-Z\-_.\/]/g, '' );
 
     if ( force && nick === newnick ) {
-      if ( this.altnick && this.altnick.length && nick !== this.altnick ) {
-        return this.generate_nick( this.altnick, true );
+      if ( this.alt_nick && this.alt_nick.length && nick !== this.alt_nick ) {
+        return this.generate_nick( this.alt_nick, true );
       }
       if ( newnick[ newnick.length-1 ] === "_" ) {
         return this.generate_nick( newnick + '?', true );
@@ -401,7 +410,7 @@ export class IRC extends Network implements IIRC {
   private setupListeners(): void {
     this.bot.on( 'registered::' + this.name , this.onRegistered.bind( this ) );
 
-    this.bot.on( 'connect::'+ this.name, ( network: IRC, server: IrcServer ) => {
+    this.bot.on( 'connect::'+ this.name, ( network: Irc, server: IrcServer ) => {
       this._connected = true;
     });
   }
@@ -441,11 +450,11 @@ export class IRC extends Network implements IIRC {
     return {
       connection_attempts: 10,
       encoding: 'utf8',
-      enable: false,
+      enable: true,
       nick: 'kwirk',
-      altnick: 'kw?rk',
-      realname: "KwirK IRC Bot",
-      user: 'KwirK',
+      alt_nick: 'kw?rk',
+      real_name: "KwirK IRC Bot",
+      user_name: 'KwirK',
       password: null,
       modes: [ 'i' ], // user modes, not channel modes
       owner: '',
@@ -457,6 +466,7 @@ export class IRC extends Network implements IIRC {
       channels: [],
       name: null,
       use_ping_timer: false,
+      ping_delay: 120000,
       reg_listen: null
     };
   }
@@ -472,7 +482,7 @@ export interface IIRC extends IRCOptions, INetwork {
 export interface IIrcOptions extends IRCOptions, INetOptions {}
 
 interface IRCOptions extends INetworkOptions {
-  altnick?: string;
+  alt_nick?: string;
   channels?: IrcChannel[];
   encoding?: string;
   modes?: string[];
@@ -480,12 +490,13 @@ interface IRCOptions extends INetworkOptions {
   owner?: string;
   password?: string;
   quit_message?: string;
-  realname?: string;
+  real_name?: string;
   reject_invalid_certs?: boolean;
   sasl?: ISasl;
   servers?: IrcServer[];
   trigger?: string;
-  user?: string;
+  user_name?: string;
   use_ping_timer?: boolean;
+  ping_delay?: number;
   reg_listen?: string;
 }

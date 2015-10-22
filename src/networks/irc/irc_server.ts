@@ -4,7 +4,7 @@ import { IrcChannel } from './irc_channel';
 import { ITLD } from '../../location/tld';
 import { AnyNet } from '../netfactory';
 import { Bot } from '../../bot';
-import { IRC } from './irc';
+import { Irc } from './irc';
 import * as _ from 'lodash';
 
 export class IrcServer extends Server implements IIRCServer {
@@ -18,7 +18,7 @@ export class IrcServer extends Server implements IIRCServer {
 
   private _connection_history: connection_history[] = [];
 
-  constructor( public network: IRC, options: IIrcServerOptions ) {
+  constructor( public network: Irc, options: IIrcServerOptions ) {
     super( network, options.host, options.port );
 
     _.merge( this, _.omit( _.defaults( options, this.defaults() ), [ 'enable' ] ));

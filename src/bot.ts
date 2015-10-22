@@ -1,3 +1,4 @@
+'use strict';
 
 import { AnyNet, IAnyNet, NetFactory } from './networks/netfactory';
 import { Network } from './networks/base/network';
@@ -9,6 +10,12 @@ import { Timer } from './utilities/timer';
 var Color = require( './utilities/color' );
 import * as _ from 'lodash';
 
+Color.global();
+
+if ( process.env.NODE_ENV !== 'production' ) {
+  require( 'longjohn' );
+}
+
 export class Bot extends EventEmitter implements IBot {
 
     public network: { [ network: string ]: AnyNet } = {};
@@ -16,6 +23,7 @@ export class Bot extends EventEmitter implements IBot {
     public Logger = Logger;
     public router: Router;
     public Timer = Timer;
+    public Color = Color;
 
     constructor( config: IAnyNet = {} ) {
       super();

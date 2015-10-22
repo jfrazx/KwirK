@@ -1,5 +1,5 @@
 
-import { IRC } from './irc';
+import { Irc } from './irc';
 
 /**
 * This class is intended for the storage of IRCD registration information
@@ -11,12 +11,12 @@ import { IRC } from './irc';
 * @todo everything
 */
 
-export class IRCD {
+export class Ircd {
 
   public motd: string[];
 
 
-  constructor( public network: IRC ) {
+  constructor( public network: Irc ) {
 
   }
 }

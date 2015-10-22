@@ -65,6 +65,10 @@ var undernet = {
     name: '#kwirk'
   }],
   use_ping_timer: true // default is false
+  /**
+  * Can pass seconds or milliseconds, accepted range is 15 seconds - 5 minutes (300 seconds)
+  */
+  ping_delay: 60
 };
 
 bot.addNetwork( freenode )
@@ -82,13 +86,13 @@ bot.addNetwork( freenode )
      })
      // reject based on criteria, in this case, possibly command triggers !command
      .reject( function( message ) {
-       return message.message && message.message.match(/^\+?!\w+/);
+       return message.content.match(/^\+?!\w+/);
      })
      // create the opposing bind, a true parameter will create it with the current binds reject, accept and maps
      .opposing( true )
      // accept Message based on criteria, all joins and parts will be accepted
      .accept( function( message ) {
-       return !!message.command.match( /^JOIN|PART$/i );
+       return message.join() || message.part();
      })
      // chain methods, all messages from user 'Nick', minus any above rejections
      .accept( function( message ) {
@@ -152,10 +156,10 @@ bot.network[ 'freenode' ]
 
 // transform the Message in some way, possibly good for filtering profanity
 .map( function( message ) {
-  message.message = message.message + ' TRANSFORMED!!';
+  message.content = message.content + ' TRANSFORMED!!';
 })
 .map( function( message ) {
-  message.message = message.message + " TWICE!!";
+  message.content = message.content + " TWICE!!";
 })
 .prefix = "\\undernet/";
 

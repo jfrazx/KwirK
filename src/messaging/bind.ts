@@ -1,5 +1,5 @@
 
-import  { Message } from './message';
+import { Message } from './message';
 import { Bot } from '../bot';
 import * as _ from 'lodash';
 
@@ -13,7 +13,7 @@ export class Bind implements IBind {
   public duplex: boolean;
   public unrestricted: boolean;
 
-  public prefix_source: boolean;
+  // public prefix_source: boolean;
   public prefix: string;
 
   public static binds: IBinds = {};
@@ -21,6 +21,7 @@ export class Bind implements IBind {
   private accepts: Function[] = [];
   private rejects: Function[] = [];
   private maps: Function[] = [];
+  private _prefix_source: boolean;
 
   constructor( private bot: Bot, opts: BindOptions, inherit: boolean = false ) {
 
@@ -57,7 +58,7 @@ export class Bind implements IBind {
     this.duplex        = opts.duplex === undefined ? true : !!opts.duplex;
     this.unrestricted  = opts.unrestricted === undefined ? true : !!opts.unrestricted;
     this.prefix_source = opts.prefix_source === undefined ? false : !!opts.prefix_source;
-    this.prefix        = opts.prefix || ( this.prefix_source ? `[${ this.network }::${ this.channel }]` : '' );
+    this.prefix        = opts.prefix || this.prefix || ''; 
 
 
     this.bot.Logger.info( `Creating binding for ${ this.network }:${ this.channel } <=> ${ this.destination }:${ this.target }` );
@@ -129,6 +130,7 @@ export class Bind implements IBind {
   * Match or reject a message based on reject and accept functions
   * @param <Message> message: The message to check
   * @return <Message>
+  * @todo return a response object
   */
   public match( message: Message ): Message {
     let matched: any;
@@ -207,6 +209,19 @@ export class Bind implements IBind {
     return !this.active;
   }
 
+  get prefix_source(): boolean {
+    return this._prefix_source;
+  }
+
+  set prefix_source( prefix: boolean ) {
+    if ( this.prefix_source && !prefix )
+      this.prefix = '';
+    else if ( prefix )
+      this.prefix = `[${ this.network }::${ this.channel }]`;
+
+    this._prefix_source = prefix;
+  }
+
   /**
   * Create an opposing bind from the current bind
   * @param <boolean> inherit: Match the existing accepts and rejects and maps
@@ -224,7 +239,7 @@ export class Bind implements IBind {
       unrestricted: this.unrestricted,
 
       prefix_source: this.prefix_source,
-      prefix: this.prefix
+      prefix: this.prefix_source ? null : this.prefix
     });
 
     if ( inherit ) {

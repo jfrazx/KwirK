@@ -29,7 +29,8 @@ export class Timer implements ITimer {
   public emitLevel: number;
 
   public busy: boolean;
-  public timer: number; // NodeJS.Timer id
+  // NodeJS.Timer id
+  public timer: number;
   public callback: Function;
 
   private _countdown: number;
@@ -158,7 +159,7 @@ export class Timer implements ITimer {
       this.start_wait = Date.now();
 
       if ( this.countdown < 1 )
-        this.countdown = this._countdown;
+        this.countdown = this.countdown;
 
       this.timer = setInterval( this.go.bind( this ), this.interval );
 
@@ -167,6 +168,15 @@ export class Timer implements ITimer {
       if ( this.immediate )
         this.go();
     }
+  }
+
+  public restart( interval?: number ): void {
+    if ( this.timer ) {
+      this.stop();
+      this.start();
+    }
+    else
+      this.start();
   }
 
   /**

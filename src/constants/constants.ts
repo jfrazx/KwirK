@@ -800,7 +800,6 @@ export module Constants {
     /**
     * @todo Document these constants
     */
-    AWAY    = <any>'AWAY',
     CAP     = <any>'CAP',
     PING    = <any>'PING',
     JOIN    = <any>'JOIN',

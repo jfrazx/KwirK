@@ -7,7 +7,7 @@ import { IrcServer } from './irc_server';
 import { Handler } from './handler';
 import { Bot } from '../../bot';
 import { Socket } from 'net';
-import { IRC } from './irc';
+import { Irc } from './irc';
 import * as tls  from 'tls';
 import * as _ from 'lodash';
 
@@ -26,27 +26,38 @@ export class IrcConnection extends Connection implements IIrcConnection {
   private hold_last: boolean;
   private handler: Handler;
   private pong_timer: Timer;
+  private _ping_delay: number;
 
-  constructor( public network: IRC, public server: IrcServer ) {
+  constructor( public network: Irc, public server: IrcServer, options: IrcConnectionOptions ) {
     super( network, server );
+
+    this.ping_delay = options.ping_delay;
 
     this.handler = new Handler( this.network );
 
     this.setupListeners();
   }
 
+  /**
+  * Connect to the IRCD
+  * @return <void>
+  */
   public connect(): void {
     if ( this.connected() ) {
       this.network.bot.emit( 'network_already_connected::'+ this.network.name, this.network, this.server );
       return;
     }
 
+    let socket_connect_event: string;
+
     this.request_disconnect = false;
     this.registered = false;
 
+    this.handler.setRegistrationListener( this.network.reg_listen );
+
     Hook.pre( 'connect', this );
 
-    let socket_connect_event = 'connect';
+    socket_connect_event = 'connect';
 
     if ( this.server.ssl ){
 
@@ -57,7 +68,8 @@ export class IrcConnection extends Connection implements IIrcConnection {
       } );
 
       socket_connect_event = 'secureConnect';
-    } else {
+    }
+    else {
       this.socket = new Socket();
       this.socket.connect( this.server.port, this.server.host );
     }
@@ -66,14 +78,38 @@ export class IrcConnection extends Connection implements IIrcConnection {
       .on( 'error', this.onError.bind( this ) );
   }
 
+  get ping_delay(): number {
+    return this._ping_delay;
+  }
+
+  set ping_delay( delay: number ) {
+    let to_milliseconds = delay * 1000;
+      if ( !to_milliseconds
+          || ( Math.floor(delay) < 15000
+              && ( to_milliseconds > 300000
+                  || to_milliseconds < 15000 ) )
+          || delay > 300000 ) {
+        delay = 120000;
+      }
+      else if ( delay < 15000 && to_milliseconds <= 300000 ) {
+        delay = to_milliseconds;
+      }
+
+    this._ping_delay = Math.floor( delay );
+
+    if ( this.pong_timer ) {
+      this.pong_timer.restart( this.ping_delay );
+    }
+  }
+
   private connectionSetup(): void {
     this.pipeSetup();
 
     this._connected = true;
 
-    this.send_cap_ls();
+    this.sendCapLs();
 
-    this.send_login();
+    this.sendLogin();
 
     this.socket.on( 'data', this.onData.bind( this ) );
     this.socket.on( 'end', this.onEnd.bind( this ) );
@@ -229,7 +265,6 @@ export class IrcConnection extends Connection implements IIrcConnection {
       this.reconnect();
   }
 
-
   /**
   * Called if the socket has an error
   * @param <any> e: The Error type objct that gets passed
@@ -239,18 +274,20 @@ export class IrcConnection extends Connection implements IIrcConnection {
   private onError( e: any ): void {
     this.network.bot.Logger.error( `an ${ e.code } error occured`, e );
 
+    this._connected = false;
+
     switch ( e.code ) {
+      case 'ECONNRESET':
       case 'EPIPE':
 
-        if ( !this.request_disconnect )
-          return this.reconnect();
+        return this.reconnect();
 
         break;
       case 'ENETUNREACH':
         return this.server.disable();
 
       case 'ETIMEDOUT':
-        if ( this.reconnect_attempts < this.network.connection_attempts ) {
+        if ( this.reconnect_attempts >= this.network.connection_attempts ) {
           this.server.disable();
           this.reconnect_attempts = 0;
           return this.network.jump();
@@ -259,11 +296,8 @@ export class IrcConnection extends Connection implements IIrcConnection {
         this.reconnect_attempts++;
         this.reconnect();
         break;
-      case 'ECONNRESET':
-
-        break;
       default: {
-        this.network.bot.Logger.error( 'an unswitched error occurred', e );
+        this.network.bot.Logger.error( 'an unmanaged error occurred', e );
       }
     }
   }
@@ -273,7 +307,10 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * @return <void>
   */
   private reconnect(): void {
-    this.reconnect_delay = this.reconnect_delay * this.reconnect_attempts || this.reconnect_delay;
+    this.reconnect_delay = this.reconnect_delay * ( this.reconnect_attempts + 1 ) || this.reconnect_delay;
+
+    if ( this.reconnect_delay > Math.pow( 8, 7 ) )
+      this.reconnect_delay = Math.pow( 8, 7 );
 
     this.network.bot.Logger.info( 'setting timer to delay ' + this.server.host + ' reconnection for ' + ( this.reconnect_delay / 1000 ).toString() + ' seconds on network ' + this.network.name );
 
@@ -282,11 +319,11 @@ export class IrcConnection extends Connection implements IIrcConnection {
       this.reconnect_timer.interval = this.reconnect_delay;
 
     else
-      this.reconnect_timer = this.network.Timer( {
+      this.reconnect_timer = this.network.Timer({
         infinite: false,
         interval: this.reconnect_delay,
         reference: 'reconnect timer ' + this.network.name,
-      }, this.connect.bind( this ) );
+      }, this.network.connect.bind( this.network ) );
 
     this.reconnect_timer.start();
   }
@@ -295,15 +332,17 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * What to do after a successful registration
   * @return <void>
   */
-  private onRegistered( network: IRC ): void {
+  private onRegistered( network: Irc ): void {
     this.registered = true;
+    this.reconnect_attempts = 0;
+    this.reconnect_delay = 5000;
 
     Hook.post( 'connect', this.network );
 
     if ( this.network.use_ping_timer ) {
       this.pong_timer = this.network.Timer(
         {
-          interval: 120000,
+          interval: this.ping_delay,
           autoStart: true,
           blocking: false,
           ignoreErrors: true,
@@ -320,7 +359,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
     this._connected = false;
 
     if ( this.request_disconnect ) {
-      // do things to end connection
+
     } else {
       // do things to reconnect ( should we assume or have a reconnect: boolean setting ?)
     }
@@ -334,15 +373,21 @@ export class IrcConnection extends Connection implements IIrcConnection {
   public pong( done?: Function ): void;
   public pong( message: string, done?: Function ): void;
   public pong( message?: any, done?: Function ): void {
-    if ( this.socket.destroyed )
-      return this.disposeSocket();
-
     if ( typeof message === 'function' ) {
       done = message;
       message = null;
     }
 
-    this.send( 'PONG '+ ( message || this.server.host ) );
+    message = message || this.server.host;
+
+    if ( !this.socket || this.disconnected() ) {
+      if ( done )
+        return this.pong_timer.stop();
+
+      return;
+    }
+
+    this.send( 'PONG '+ message );
 
     if ( done )
       done();
@@ -352,7 +397,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * Send a CAP LIST to the IRC server
   * @return <void>
   */
-  private send_cap_ls(): void {
+  private sendCapLs(): void {
     this.send( 'CAP LS 302' );
   }
 
@@ -361,7 +406,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * @param <string> capabilities: The capabilities to request from the Server
   * @return <void>
   */
-  public send_cap_req( capabilities?: string ): void {
+  public sendCapReq( capabilities?: string ): void {
     this.send( 'CAP REQ :' + capabilities );
   }
 
@@ -369,7 +414,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * End the CAP negotiations
   * @return <void>
   */
-  public send_cap_end(): void {
+  public sendCapEnd(): void {
     this.send( 'CAP END' );
   }
 
@@ -381,7 +426,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * Send login information to the IRC server
   * @return <void>
   */
-  private send_login(): void {
+  private sendLogin(): void {
     var password = this.server.password || this.network.password;
     if ( password )
       this.send( "PASS " + password );
@@ -389,7 +434,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
     this.nick = this.network.generate_nick()
 
     this.send( 'NICK ' +  this.nick );
-    this.send( 'USER ' + this.network.user + ' ' + ( _.include( this.network.modes, 'i' ) ? '8' : '0' ) + " * :" + this.network.realname  );
+    this.send( 'USER ' + this.network.user_name + ' ' + ( _.include( this.network.modes, 'i' ) ? '8' : '0' ) + " * :" + this.network.real_name  );
   }
 
   /**
@@ -398,17 +443,18 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * @return <void>
   */
   private parseMessage( line: string ): void {
-    console.log( line );
-    var tags: any[] = [];
+    let time = new Date();
+    console.log( '[' + time.getHours() +':' + time.getMinutes() + ':' + time.getSeconds() + ']', line );
+    let tags: any[] = [];
 
     if ( !line )
       return;
 
     line = line.trim();
 
-    var parse_regex = /^(?:(?:(?:@([^ ]+) )?):(?:([^\s!]+)|([^\s!]+)!([^\s@]+)@?([^\s]+)?) )?(\S+)(?: (?!:)(.+?))?(?: :(.*))?$/i;
+    let parse_regex = /^(?:(?:(?:@([^ ]+) )?):(?:([^\s!]+)|([^\s!]+)!([^\s@]+)@?([^\s]+)?) )?(\S+)(?: (?!:)(.+?))?(?: :(.*))?$/i;
 
-    var message = parse_regex.exec( line.replace( /^\r+|\r+$/, '' ) );
+    let message = parse_regex.exec( line.replace( /^\r+|\r+$/, '' ) );
 
     if ( !message ) {
       this.network.bot.Logger.warn( 'Malformed IRC line: %s', line.replace( /^\r+|\r+$/, '' ) );
@@ -425,7 +471,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
         }
     }
 
-    var msg_obj = {
+    let msg_obj = {
         tags:       tags,
         prefix:     message[ 2 ],
         nick:       message[ 3 ] || message[ 2 ],  // Nick will be in the prefix slot if a full user mask is not used
@@ -450,15 +496,18 @@ export class IrcConnection extends Connection implements IIrcConnection {
       this.network.bot.emit( emission, msg_obj );
     }
     catch ( e ) {
-      this.network.bot.Logger.error( 'An error occured', e );
-      this.network.bot.emit('error::'+ this.network.name, {
+      this.network.bot.emit( 'error', {
         error: e,
         message: msg_obj
-      } );
+      });
     }
   }
 }
 
 interface IIrcConnection extends IConnection {
 
+}
+
+interface IrcConnectionOptions {
+  ping_delay?: number;
 }

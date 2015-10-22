@@ -1,3 +1,4 @@
+'use strict';
 
 import { AnyNet } from '../netfactory';
 import { Transform } from 'stream';

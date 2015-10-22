@@ -16,6 +16,12 @@ export class SlackServer extends Server implements ISlackServer {
 
   }
 
+  private defaults(): ISlackServerOptions {
+    return {
+      host: 'api.slack.com'
+    };
+  }
+
 }
 
 interface ISlackServer extends IServer, ISlackServerOptions {

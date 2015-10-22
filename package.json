@@ -1,6 +1,6 @@
 {
   "name": "kwirk",
-  "version": "0.2.1",
+  "version": "0.2.11",
   "description": "KwirK, a sophisticated multi-network, multi-protocol bot, (eventually).",
   "main": "index.js",
   "directories": {
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "chai": "^3.3.0",
+    "longjohn": "^0.2.9",
     "mocha": "^2.3.2"
   },
   "scripts": {

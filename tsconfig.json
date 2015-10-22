@@ -21,6 +21,7 @@
         "src/messaging/bind.ts",
         "src/messaging/listener.ts",
         "src/messaging/message.ts",
+        "src/messaging/response.ts",
         "src/messaging/router.ts",
         "src/networks/base/channel.ts",
         "src/networks/base/connection.ts",

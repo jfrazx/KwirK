@@ -1,17 +1,20 @@
+'use strict';
 
 import { Constants } from '../../constants/constants';
 import { Message } from '../../messaging/message';
-import { IRC } from './irc';
+import { Irc } from './irc';
 import * as _ from 'lodash';
 
 export class Handler {
 
-  constructor( public network: IRC ) {
+  constructor( public network: Irc ) {
 
     _.each ( _.compact( _.unique( _.keys( Constants.IRC ) ) ), ( name ) => {
       let event = name + '::' + this.network.name;
       let listener = name;
-      if ( !!parseInt( name ) ) { // we should never get a code 0, so this should be ok
+
+      // we should never get a code 0, so this should be ok
+      if ( !!parseInt( name ) ) {
         listener = Constants.IRC[ name ];
       }
 
@@ -28,18 +31,22 @@ export class Handler {
     });
 
     /**
-    * Setting the event to listen that will signal IRCD registration is complete
+    * If we receive unknown emits
     */
-    let once = ( this.network.reg_listen || 'RPL_ENDOFMOTD' ) + '::' + this.network.name;
+    this.network.bot.on( 'UNKNOWN::'+ this.network.name, this.UNKNOWN.bind( this ) );
+  }
+
+  /**
+  * Set the event to listen which signals IRCD registration is complete
+  * @param <string> event: The event in which to listen
+  * @return <void>
+  */
+  public setRegistrationListener( event?: string ): void {
+    let once = ( event || 'RPL_ENDOFMOTD' ) + '::' + this.network.name;
 
     this.network.bot.once( once, ( message: any ) => {
       this.network.bot.emit( 'registered::'+ this.network.name, message.network, message.network.active_server );
     });
-
-    /**
-    * If we receive unknown emits
-    */
-    this.network.bot.on( 'UNKNOWN::'+ this.network.name, this.UNKNOWN.bind( this ) );
   }
 
   /**
@@ -117,7 +124,7 @@ export class Handler {
     let use_nick: string;
 
     if ( this.network.nick === this.network.connection.nick ) {
-      use_nick = this.network.altnick;
+      use_nick = this.network.alt_nick;
     }
     else {
       use_nick = this.network.nick;
@@ -512,12 +519,12 @@ export class Handler {
 
   private CAP( message: any ): void {
     // thanks Kiwi
-    var capabilities = message.params[ message.params.length - 1 ].replace( /(?:^| )[\-~=]/, '' ).split( ' ' );
+    let capabilities = message.params[ message.params.length - 1 ].replace( /(?:^| )[\-~=]/, '' ).split( ' ' );
 
     if ( !this.network.sasl ) {
       _.remove( capabilities, ( cap ) => {
         return cap === 'sasl';
-      } );
+      });
     }
 
     switch ( message.params[ 1 ] ) {
@@ -525,10 +532,10 @@ export class Handler {
         capabilities = []; //temporary, will deal with this soon
         if ( capabilities.length ) {
           this.network.connection.capabilities.requested = capabilities;
-          this.network.connection.send_cap_req( capabilities.join( ' ' ) );
+          this.network.connection.sendCapReq( capabilities.join( ' ' ) );
         }
         else {
-          this.network.connection.send_cap_end();
+          this.network.connection.sendCapEnd();
         }
         break;
         case 'ACK':
@@ -543,7 +550,7 @@ export class Handler {
               this.network.send( 'AUTHENTICATE PLAIN' );
             }
             else {
-              this.network.connection.send_cap_end();
+              this.network.connection.sendCapEnd();
             }
           }
           break;
@@ -552,7 +559,7 @@ export class Handler {
             this.network.connection.capabilities.requested = _.difference( this.network.connection.capabilities.requested, capabilities );
           }
           if ( this.network.connection.capabilities.requested.length ) {
-            this.network.connection.send_cap_end();
+            this.network.connection.sendCapEnd();
           }
           break;
       case 'LIST':
@@ -567,10 +574,13 @@ export class Handler {
   * @return <void>
   */
   private PART( message: any ): void {
+    let msg: Message,
+        nick: string;
+
     message.channel = this.network.addChannel( { name: message.params[ 0 ] } );
     message.target  = message.channel;
 
-    let nick: string = message.nick;
+    nick = message.nick;
 
     // the bot parted the channel
     if ( nick === this.network.connection.nick )
@@ -580,7 +590,12 @@ export class Handler {
       message.channel.removeUser( message.user );
     }
 
-    this.route( message );
+    msg = new Message( message );
+
+    msg.events.push( 'part' );
+    msg.events.push( 'public' );
+
+    this.route( msg );
   }
 
   /**
@@ -589,12 +604,17 @@ export class Handler {
   * @return <void>
   */
   private JOIN( message: any ): void {
+    let msg: Message,
+        nick: string,
+        ident: string,
+        hostname: string;
+
     message.channel = this.network.addChannel( { name: message.params[ 0 ] } );
     message.target  = message.channel;
 
-    let nick: string = message.nick;
-    let ident: string = message.ident;
-    let hostname: string = message.hostname;
+    nick = message.nick;
+    ident = message.ident;
+    hostname = message.hostname;
 
     // the bot joined the channel
     if ( nick === this.network.connection.nick ) {
@@ -613,7 +633,12 @@ export class Handler {
       });
     }
 
-    this.route( message );
+    msg = new Message( message );
+
+    msg.events.push( 'join' );
+    msg.events.push( 'public' );
+
+    this.route( msg );
   }
 
   /**
@@ -621,8 +646,12 @@ export class Handler {
   * @param <any> message: The message object literal to send
   * @return <void>
   */
+  private route( message: Message ): void;
   private route( message: any ): void {
-    this.network.bot.router.route( new Message( message ));
+    if ( !(message instanceof Message ))
+      message = new Message( message );
+
+    this.network.bot.router.route( message );
   }
 
   /**
@@ -649,6 +678,9 @@ export class Handler {
   * @return <void>
   */
   private defineMessage( message: any ): void {
+    let msg: Message,
+        match: RegExpExecArray;
+
     message.channel = this.network.channel[ message.params[ 0 ].toLowerCase() ];
     message.user    = this.network.findUser( message.nick );
     message.target  = message.channel || message.user;
@@ -657,14 +689,50 @@ export class Handler {
 
     message.message = message.params[ 1 ];
 
-    this.route( message );
+    match = /^(\u0001)(.*)(\u0001)$/.exec( message.params[ 1 ] );
+
+    if ( match && message.target == message.user ) {
+      // we don't want it to match action
+      if ( !message.message.substr( 1, 6 ).match( /^ACTION$/ ) ) {
+        return this.handleCTCP( message, match );
+      }
+    }
+
+    msg = new Message( message );
+
+    /**
+    * Did this event happen in a channel or as a private message?
+    */
+    msg.events.push( msg.target == msg.channel ? 'public' : 'private' );
+
+    if ( msg.command.match( /^NOTICE/i ))
+      msg.events.push( 'notice' );
+
+    else if ( msg.content.substr( 1, 6 ).match( /^ACTION$/ )) {
+      msg.events.push( 'action' );
+      msg.content = msg.content.slice( 7 ).trim();
+    }
+    else if ( msg.command.match( /^PRIVMSG/i ))
+      msg.events.push( 'message' );
+
+    // this shouldn't happen, but...
+    else {
+      msg.events.push( 'unknown' );
+
+      this.network.bot.Logger.warn( `Unknown IRC event with command ${ msg.command } and message ${ msg.message }` );
+    }
+
+    this.route( msg );
+  }
+
+  /**
+  * @todo handle VERSION , SOURCE and other CTCP queries
+  */
+  private handleCTCP( message: any, match: RegExpExecArray ): void {
+    console.log( 'ctcp', match );
   }
 
   private MODE( message: any ): void {
     this.network.bot.Logger.warn( 'IRC Constant ' + Constants.IRC[ message.command ] + ' handler defined with no implementation' );
-  }
-
-  private AWAY( message: any ): void {
-    console.log( 'away', _.omit( message, ['network'] ) );
   }
 }

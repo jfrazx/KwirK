@@ -1,3 +1,4 @@
+'use strict';
 
 import { AnyNet } from '../netfactory';
 import { Bot } from '../../bot';
@@ -8,6 +9,8 @@ export abstract class Server implements IServer {
   protected _enable    = true;
 
   constructor( public network: AnyNet, public host: string, public port: number ) {
+
+    this.network.bot.Logger.info( `Creating new server on ${ this.network.name } using ${ this.host }` );
   }
 
   /**

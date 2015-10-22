@@ -1,7 +1,7 @@
 
 import { Channel, IChannel, IChannelOptions } from '../base/channel';
 import { IrcUser, IIrcUserOptions } from './irc_user';
-import { IRC } from './irc';
+import { Irc } from './irc';
 import * as _ from 'lodash';
 
 export class IrcChannel extends Channel implements IIrcChannel {
@@ -16,13 +16,52 @@ export class IrcChannel extends Channel implements IIrcChannel {
   */
   public modes: string[];
 
-  constructor( public network: IRC, options: IIrcChannelOptions ) {
+  constructor( public network: Irc, options: IIrcChannelOptions ) {
     super( network, options );
 
     _.merge( this, _.omit( _.defaults( options, this.defaults() ), [ 'name' ] ));
 
 
     this.network.bot.on('disconnect::' + this.network.name, this.onDisconnect.bind( this ));
+  }
+
+  /**
+  * Give channel operator status to user
+  * @param <IrcUser> user: The user to op
+  * @return <void>
+  */
+  public op( user: IrcUser ): void {
+    this.send( `MODE ${ this.name } +o ${ user.name }` );
+  }
+
+  /**
+  * Removes channel operator status from user
+  * @param <IrcUser> user: The user to deop
+  * @return <void>
+  */
+  public deop( user: IrcUser ): void {
+    this.send( `MODE ${ this.name } -o ${ user.name }` );
+  }
+
+  /**
+  * Give channel voice to user
+  * @param <IrcUser> user: The user to voice
+  * @return <void>
+  */
+  public voice( user: IrcUser ): void {
+    this.send( `MODE ${ this.name } +v ${ user.name }` );
+
+    // if ( this.network.botUser.opped( this.name )) {
+    //   return true;
+    // }
+  }
+  /**
+  * Removes channel voice from user
+  * @param <IrcUser> user: The user to devoice
+  * @return <void>
+  */
+  public devoice( user: IrcUser ): void {
+    this.send( `MODE ${ this.name } -v ${ user.name }` );
   }
 
   /**
@@ -118,7 +157,7 @@ export class IrcChannel extends Channel implements IIrcChannel {
   * Retrieve the channel encryption key
   * @return <String> || <Null> ( if not set )
   */
-  get encryption_key(): string {
+  get encryptionKey(): string {
     return this.key;
   }
 
@@ -127,7 +166,7 @@ export class IrcChannel extends Channel implements IIrcChannel {
   * @param <String> key: The shiny new channel encryption key
   * @return <void>
   */
-  set encryption_key( key: string ) {
+  set encryptionKey( key: string ) {
     this.key = key;
   }
 
@@ -135,7 +174,7 @@ export class IrcChannel extends Channel implements IIrcChannel {
   * Retrieve the channel key ( aka password )
   * @return <String> || <Null> ( if not set )
   */
-  get channel_key(): string {
+  get channelKey(): string {
     return this.password;
   }
 
@@ -144,7 +183,7 @@ export class IrcChannel extends Channel implements IIrcChannel {
   * @param <String> key: The new channel key
   * @return <void>
   */
-  set channel_key( key: string ) {
+  set channelKey( key: string ) {
     let same = this.password === key;
     this.password = key;
 

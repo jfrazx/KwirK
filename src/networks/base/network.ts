@@ -1,3 +1,4 @@
+'use strict';
 
 import { Bind, BindOptions, IBindOptions } from '../../messaging/bind';
 import { Timer, ITimerOptions } from '../../utilities/timer';
@@ -17,6 +18,7 @@ export abstract class Network implements INetwork {
   public channels: Channel[] = [];
   public channel: { [ chan: string ]: Channel } = {};
   public ident: string;
+  public type: string;
   public hostname: string;
   public connection: Connection;
   public connection_attempts = 0;
@@ -32,7 +34,9 @@ export abstract class Network implements INetwork {
 
     this.name = options.name.toLowerCase();
     this._enable = options.enable === undefined ? true : !!options.enable;
+    this.type = options.type;
 
+    this.bot.Logger.info( `Created new network ${ this.name } of type ${ this.type }` );
   }
 
   public bind( options: IBindOptions, inherit: boolean = false ): Bind {
@@ -161,6 +165,26 @@ export abstract class Network implements INetwork {
     return !!this.findUser( name );
   }
 
+  /**
+  * Determine the name of the current network bot
+  * @return <string>
+  */
+  public myNick(): string {
+    let nick: string;
+
+    if( this.connected() )
+      nick = this.connection.nick;
+    else
+      nick = this.nick;
+
+    return nick;
+  }
+
+  /**
+  * Find a network user by their username
+  * @param <string> name: The name of the user you seek
+  * @return <User>
+  */
   public findUser( name: string ): User {
     return _.find( this.users, ( user ) => {
       return user.name === name;
@@ -184,6 +208,8 @@ export interface INetwork extends INetworkOptions {
 
   send( message: string ): void;
   toString(): string;
+
+  myNick(): string;
 
 }
 
