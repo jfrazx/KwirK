@@ -12,6 +12,7 @@
     "async": "^1.4.2",
     "eventemitter2": "^0.4.14",
     "hashish": "0.0.4",
+    "iconv-lite": "^0.4.13",
     "lodash": "^3.10.1",
     "winston": "^1.0.1"
   },

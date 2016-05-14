@@ -4,14 +4,12 @@
 *.log
 *.pid
 .DS_Store
-todo
+src/**/*.d.ts
 
 !test/**/*
 !examples/**/*
-
-*/.DS_Store
+!typings/**/*
 
 node_modules/
-typings/**/*
 
-!typings/**/node*
+*/.DS_Store

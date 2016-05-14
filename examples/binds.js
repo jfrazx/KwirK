@@ -64,7 +64,7 @@ var undernet = {
   channels: [{
     name: '#kwirk'
   }],
-  use_ping_timer: true // default is false
+  use_ping_timer: true, // default is false
   /**
   * Can pass seconds or milliseconds, accepted range is 15 seconds - 5 minutes (300 seconds)
   */
@@ -178,5 +178,5 @@ bot.start();
 
 
 setTimeout( function() {
-  bot.quit();
-}, 300000 );
+  bot.quit( 'this is the end' );
+}, 100000 );

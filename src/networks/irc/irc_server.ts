@@ -79,8 +79,12 @@ export class IrcServer extends Server implements IIRCServer {
 
     this._enable = false;
 
-    if ( this.connected() && this.network.active_server == this )
+    if ( this.connected() && this.activeServer() )
       this.network.jump();
+  }
+
+  private activeServer(): boolean {
+    return this.network.isActiveServer( this );
   }
 
   /**

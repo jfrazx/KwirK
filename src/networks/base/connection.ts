@@ -10,15 +10,16 @@ import { Socket } from 'net';
 export abstract class Connection implements IConnection {
 
   public socket: Socket | TLSSocket;
+  public server: Server;
   public nick: string;
 
   protected _connected = false;
-  protected reconnect_delay: number = 5000;
+  protected reconnect_delay = 5000;
   protected write_buffer: string[] = [];
   protected buffer = new Transform();
 
 
-  constructor( public network: AnyNet, public server: Server ) {
+  constructor( public network: AnyNet ) {
 
   }
 

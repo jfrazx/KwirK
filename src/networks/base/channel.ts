@@ -1,16 +1,17 @@
 
 import { AnyNet, IAnyNet } from '../netfactory';
 import { Target, ITarget } from './target';
+import { Network } from './network';
 import { User } from './user';
 import * as _ from 'lodash';
 
-export abstract class Channel extends Target implements IChannel {
+export abstract class Channel<N extends Network> extends Target implements IChannel<N> {
 
   public users: User[] = [];
 
   protected _in_channel: boolean = false;
 
-  constructor( public network: AnyNet, options: IChannelOptions ) {
+  constructor( public network: N, options: IChannelOptions ) {
     super( options.name );
 
     this.network.bot.Logger.info( `Creating new channel ${ this.name } on network ${ this.network.name }` );
@@ -35,13 +36,13 @@ export abstract class Channel extends Target implements IChannel {
     let instance = nick instanceof User;
 
     _.remove( this.users, ( user ) => {
-      return instance ? user == nick : user.name === nick;
+      return (instance ? user.name : user) === nick;
     });
   }
 }
 
-export interface IChannel extends IChannelOptions, ITarget {
-  network: AnyNet;
+export interface IChannel<N extends Network> extends IChannelOptions, ITarget {
+  network: N;
 }
 
 export interface IChannelOptions {

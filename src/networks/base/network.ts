@@ -3,6 +3,7 @@
 import { Bind, BindOptions, IBindOptions } from '../../messaging/bind';
 import { Timer, ITimerOptions } from '../../utilities/timer';
 import { AnyNet, IAnyNet } from '../netfactory';
+import { UsersList } from './users_list';
 import { Connection } from './connection';
 import { Channel } from './channel';
 import { Bot } from '../../bot';
@@ -26,21 +27,20 @@ export abstract class Network implements INetwork {
   protected _connected: boolean = false;
   protected _enable: boolean;
 
-  constructor( public bot: Bot, options: IAnyNet ) {
-    options = options || {};
-
+  constructor( public bot: Bot, options: IAnyNet = {} ) {
     if ( !options.name || !options.name.trim().length )
       throw new Error( 'a network name must be supplied' );
 
     this.name = options.name.toLowerCase();
     this._enable = options.enable === undefined ? true : !!options.enable;
     this.type = options.type;
+    this.bot.timers[ this.name ] = [];
 
     this.bot.Logger.info( `Created new network ${ this.name } of type ${ this.type }` );
   }
 
   public bind( options: IBindOptions, inherit: boolean = false ): Bind {
-    let opts: BindOptions = <BindOptions> options;
+    let opts = <BindOptions> options;
 
     opts.source_network = this.name;
 
@@ -53,6 +53,17 @@ export abstract class Network implements INetwork {
   * @abstract
   */
   public abstract connect(): void;
+
+  /**
+  * Disable the network
+  * @return <void>
+  */
+  public disable(): void {
+    this._enable = false;
+
+    if ( this.connected() )
+      this.disconnect();
+  };
 
   /**
   * Are we enabled?
@@ -69,12 +80,6 @@ export abstract class Network implements INetwork {
   public enable(): void {
     this._enable = true;
   }
-
-  /**
-  * Disable the network
-  * @return <void>
-  */
-  public disable(): void {}
 
   /**
   * Are we connected?
@@ -117,7 +122,7 @@ export abstract class Network implements INetwork {
   * @return <String>
   */
   public toString(): string {
-    return this.name;
+    return `<${ this.type.toUpperCase() }: ${ this.name }`;
   }
 
   /**
@@ -127,10 +132,7 @@ export abstract class Network implements INetwork {
   * @return <Timer>
   */
   public Timer( options: ITimerOptions, callback: ( done: Function )=> void ): Timer {
-    var timer = new this.bot.Timer( <AnyNet> this, options, callback );
-
-    if ( !this.bot.timers[ this.name ] )
-      this.bot.timers[ this.name ] = [];
+    let timer = new this.bot.Timer( <AnyNet><any>this, options, callback );
 
     this.bot.timers[ this.name ].push( timer );
 
@@ -142,12 +144,10 @@ export abstract class Network implements INetwork {
   * @return <void>
   */
   public clearTimers(): void {
-    if ( this.bot.timers[ this.name ] ) {
-      this.bot.emit( 'clear_timers::'+ this.name, this );
-      _.each( this.bot.timers[ this.name ], ( timer ) => {
-        timer.stop();
-      });
-    }
+    this.bot.emit( 'clear_timers::'+ this.name, this );
+    _.each( this.bot.timers[ this.name ], ( timer ) => {
+      timer.stop();
+    });
   }
 
   public channelExists( name: string ): boolean {
@@ -169,15 +169,8 @@ export abstract class Network implements INetwork {
   * Determine the name of the current network bot
   * @return <string>
   */
-  public myNick(): string {
-    let nick: string;
-
-    if( this.connected() )
-      nick = this.connection.nick;
-    else
-      nick = this.nick;
-
-    return nick;
+  public botNick(): string {
+    return this.connected() ? this.connection.nick : this.nick;
   }
 
   /**
@@ -209,7 +202,7 @@ export interface INetwork extends INetworkOptions {
   send( message: string ): void;
   toString(): string;
 
-  myNick(): string;
+  botNick(): string;
 
 }
 
@@ -234,4 +227,9 @@ export interface INetworkOptions {
   * How many times should we attempt to reconnect ( before moving to the next server or disabling )
   */
   connection_attempts?: number;
+
+  /**
+  * What type of network is this? e.g 'irc' or 'slack'
+  */
+  type?: string;
 }

@@ -65,7 +65,6 @@ export class Router {
 
             let joinPart = !!message.command.match( /^JOIN|PART$/i );
             let msg: Message = null;
-
             /**
             * Let the bind determine if the message is a match
             */
@@ -84,7 +83,7 @@ export class Router {
               }
             }
 
-            this.bot.Logger.info( `Router binding match ${ msg ? 'accepted' : 'rejected' } for ${ bind.network }:${ bind.channel } to ${ bind.destination }:${ bind.target } matching: ${ joinPart ? 'JOIN/PART' : message.message }` );
+            this.bot.Logger.info( `Router binding match ${ msg ? 'accepted' : 'rejected' } from ${ bind.network }:${ bind.channel } to ${ bind.destination }:${ bind.target } matching: ${ joinPart ? 'JOIN/PART' : message.content }` );
           }
         }
       });

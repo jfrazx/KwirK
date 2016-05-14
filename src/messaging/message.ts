@@ -45,7 +45,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public notice(): boolean {
-    return this.events.indexOf( 'notice' ) >= 0;
+    return !!~this.events.indexOf( 'notice' );
   }
 
   /**
@@ -53,7 +53,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public private(): boolean {
-    return this.events.indexOf( 'private' ) >= 0;
+    return !!~this.events.indexOf( 'private' );
   }
 
   /**
@@ -61,7 +61,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public public(): boolean {
-    return this.events.indexOf( 'public' ) >= 0;
+    return !!~this.events.indexOf( 'public' );
   }
 
   /**
@@ -69,7 +69,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public action(): boolean {
-    return this.events.indexOf( 'action' ) >= 0;
+    return !!~this.events.indexOf( 'action' );
   }
 
   /**
@@ -77,7 +77,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public message(): boolean {
-    return this.events.indexOf( 'message' ) >= 0;
+    return !!~this.events.indexOf( 'message' );
   }
 
   /**
@@ -85,7 +85,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public join(): boolean {
-    return this.events.indexOf( 'join' ) >= 0;
+    return !!~this.events.indexOf( 'join' );
   }
 
   /**
@@ -93,7 +93,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public part(): boolean {
-    return this.events.indexOf( 'part' ) >= 0;
+    return !!~this.events.indexOf( 'part' );
   }
 
   /**
@@ -101,7 +101,7 @@ export class Message implements IMessage {
   * @return <boolean>
   */
   public isBot(): boolean {
-    return this.nick == this.network.myNick();
+    return this.nick === this.network.botNick();
   }
 
   /**

@@ -2,25 +2,27 @@
 import { HipChat, IHipChatOptions } from './hipchat/hipchat';
 import { Slack, ISlackOptions } from './slack/slack';
 import { Irc, IIrcOptions } from './irc/irc';
-import { Network } from './base/network';
+import { INetwork, INetworkOptions } from './base/network';
 import { Bot } from './../bot';
 
-export class NetFactory {
+export module NetFactory {
+  export function createNetwork<O extends INetworkOptions>( bot: Bot, options: O  ): AnyNet {
 
-  static createNetwork ( bot: Bot, net: IAnyNet ): AnyNet {
+    switch ( options.type ) {
+      // case 'gitter':
+        // return new Gitter( bot, options );
 
-    switch ( net.type ) {
       case 'hipchat':
-        return new HipChat( bot, net );
+        return new HipChat( bot, options );
 
       case 'irc':
-        return new Irc( bot, net );
+        return new Irc( bot, options );
 
       case 'slack':
-        return new Slack( bot, net );
+        return new Slack( bot, options );
 
       default:
-        throw new Error( net.type + ' is not a known network type' );
+        throw new Error( options.type + ' is not a known network type' );
 
     }
   }

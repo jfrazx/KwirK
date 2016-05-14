@@ -1,6 +1,6 @@
 
 import { Connection, IConnection } from '../base/connection';
-import { Constants } from '../../constants/constants';
+import { MessageBuffer } from './message_buffer';
 import { Timer } from '../../utilities/timer';
 import * as Hook from '../../utilities/hook';
 import { IrcServer } from './irc_server';
@@ -17,23 +17,37 @@ export class IrcConnection extends Connection implements IIrcConnection {
   public request_disconnect: boolean;
   public capabilities: { requested: string[], enabled: string[] } = { requested: [], enabled: [] };
   public registered: boolean;
+  public server: IrcServer;
 
-  // the actual nick is use
+  // the actual nick in use
   public nick: string;
 
   private reconnect_timer: Timer;
-  private held_data: any;
-  private hold_last: boolean;
   private handler: Handler;
   private pong_timer: Timer;
   private _ping_delay: number;
+  private message_buffer: MessageBuffer;
+  public reconnect_delay: number = IrcConnection.DEFAULT_DELAY;
 
-  constructor( public network: Irc, public server: IrcServer, options: IrcConnectionOptions ) {
-    super( network, server );
+  private static MIN_PING      = 15000;
+  private static DEFAULT_PING  = 120000;
+  private static MAX_PING      = 300000;
+  private static DEFAULT_DELAY = 5000;
+
+  constructor( public network: Irc, options: IrcConnectionOptions ) {
+    super( network );
 
     this.ping_delay = options.ping_delay;
 
     this.handler = new Handler( this.network );
+
+    this.message_buffer = new MessageBuffer( this );
+
+    this.reconnect_timer = this.network.Timer({
+      infinite: false,
+      interval: this.reconnect_delay,
+      reference: `reconnect_timer_${ this.network.name }`,
+    }, this.network.connect.bind( this.network ) );
 
     this.setupListeners();
   }
@@ -53,13 +67,14 @@ export class IrcConnection extends Connection implements IIrcConnection {
     this.request_disconnect = false;
     this.registered = false;
 
+    // reg_listen should be a connection property
     this.handler.setRegistrationListener( this.network.reg_listen );
 
     Hook.pre( 'connect', this );
 
     socket_connect_event = 'connect';
 
-    if ( this.server.ssl ){
+    if ( this.server.ssl ) {
 
       this.socket = tls.connect( {
         rejectUnauthorized: this.network.reject_invalid_certs,
@@ -85,13 +100,13 @@ export class IrcConnection extends Connection implements IIrcConnection {
   set ping_delay( delay: number ) {
     let to_milliseconds = delay * 1000;
       if ( !to_milliseconds
-          || ( Math.floor(delay) < 15000
-              && ( to_milliseconds > 300000
-                  || to_milliseconds < 15000 ) )
-          || delay > 300000 ) {
-        delay = 120000;
+          || ( Math.floor(delay) < IrcConnection.MIN_PING
+              && ( to_milliseconds > IrcConnection.MAX_PING
+                  || to_milliseconds < IrcConnection.MIN_PING ) )
+          || delay > IrcConnection.MAX_PING ) {
+        delay = IrcConnection.DEFAULT_PING;
       }
-      else if ( delay < 15000 && to_milliseconds <= 300000 ) {
+      else if ( delay < IrcConnection.MIN_PING && to_milliseconds <= IrcConnection.MAX_PING ) {
         delay = to_milliseconds;
       }
 
@@ -111,7 +126,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
 
     this.sendLogin();
 
-    this.socket.on( 'data', this.onData.bind( this ) );
+    this.socket.on( 'data', this.message_buffer.onData.bind( this.message_buffer ) );
     this.socket.on( 'end', this.onEnd.bind( this ) );
     this.socket.on( 'close', this.onClose.bind( this ) );
 
@@ -132,15 +147,29 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * @param <string> message: The quit message to send
   * @return <void>
   */
-  public disconnect( message: string = this.network.quit_message ): void {
-    if ( !this.connected() && !this.socket ) return;
+  public disconnect( callback?: Function ): void;
+  public disconnect( message?: string ): void;
+  public disconnect( message: string, callback: Function ): void;
+  public disconnect( message: any = this.network.quit_message, callback?: Function ): void {
+    if ( typeof message === 'function' ) {
+      callback = message;
+      message = this.network.quit_message;
+    }
+
+    if ( !this.connected() && !this.socket ) {
+      return callback && callback( null );
+    }
 
     this.request_disconnect = true;
 
-    this.send( 'QUIT : ' + message );
+    this.send( `QUIT :${ message }` );
     this.send( null );
 
-    process.nextTick( this.end.bind( this ) );
+    setTimeout( ()=> {
+      process.nextTick( this.end.bind( this ) );
+    }, 100 );
+
+    callback && callback( null );
   }
 
   public dispose(): void {
@@ -153,91 +182,15 @@ export class IrcConnection extends Connection implements IIrcConnection {
     if ( this.socket )
       this.end();
 
-    _.each( this.network.users, ( user ) => {
-      user.dispose();
-    });
+    this.network.dispose();
 
-    _.each( _.keys( this.network.channel ), ( name ) => {
-      this.network.channel[ name ].dispose();
-    });
+    if ( this.pong_timer ) {
+      this.pong_timer.stop();
+      this.pong_timer = null;
+    }
 
-    this.network.users = [];
-    this.network.channel = {};
-
-    this.server.dispose();
+    this.server && this.server.dispose();
     this.server = null;
-  }
-
-  /**
-  * Called when the socket receives data
-  * @param <Buffer> data: The data received from the socket
-  * @return <void>
-  * @private
-  */
-  private onData( data: Buffer ) {
-    // from kiwiIRC
-    var data_pos: number,               // Current position within the data Buffer
-        line_start = 0,
-        lines: Buffer[] = [],
-        max_buffer_size = 1024; // 1024 bytes is the maximum length of two RFC1459 IRC messages.
-                                // May need tweaking when IRCv3 message tags are more widespread
-
-    // Split data chunk into individual lines
-    for ( data_pos = 0; data_pos < data.length; data_pos++ ) {
-        if ( data[ data_pos ] === 0x0A ) { // Check if byte is a line feed
-            lines.push( data.slice( line_start, data_pos ) );
-            line_start = data_pos + 1;
-        }
-    }
-
-    // No complete lines of data? Check to see if buffering the data would exceed the max buffer size
-    if ( !lines[ 0 ] ) {
-        if ( ( this.held_data ? this.held_data.length : 0 ) + data.length > max_buffer_size ) {
-            // Buffering this data would exeed our max buffer size
-            this.network.bot.emit( 'error', 'Message buffer too large' );
-            this.socket.destroy();
-
-        } else {
-
-            // Append the incomplete line to our held_data and wait for more
-            if ( this.held_data ) {
-                this.held_data = Buffer.concat( [ this.held_data, data ], this.held_data.length + data.length );
-            } else {
-                this.held_data = data;
-            }
-        }
-
-        // No complete lines to process..
-        return;
-    }
-
-    // If we have an incomplete line held from the previous chunk of data
-    // merge it with the first line from this chunk of data
-    if ( this.hold_last && this.held_data !== null ) {
-        lines[ 0 ] = Buffer.concat( [ this.held_data, lines[ 0 ] ], this.held_data.length + lines[ 0 ].length );
-        this.hold_last = false;
-        this.held_data = null;
-    }
-
-    // If the last line of data in this chunk is not complete, hold it so
-    // it can be merged with the first line from the next chunk
-    if ( line_start < data_pos ) {
-        if ( ( data.length - line_start ) > max_buffer_size ) {
-            // Buffering this data would exeed our max buffer size
-            this.network.bot.emit( 'error', 'Message buffer too large' );
-            this.socket.destroy();
-            return;
-        }
-
-        this.hold_last = true;
-        this.held_data = new Buffer( data.length - line_start );
-        data.copy( this.held_data, 0, line_start );
-    }
-
-    // Process our data line by line
-    for ( let i = 0; i < lines.length; i++ ) {
-      this.parseMessage( lines[ i ].toString( this.network.encoding ) );
-    }
   }
 
   public end(): void {
@@ -247,7 +200,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
   }
 
   // more on this later...
-  public send( data: string ): void {
+  public send( data: string, callback?: Function ): void {
     if ( this.connected() && this.socket )
       this.buffer.push( data + '\r\n' );
   }
@@ -281,10 +234,9 @@ export class IrcConnection extends Connection implements IIrcConnection {
       case 'EPIPE':
 
         return this.reconnect();
-
-        break;
       case 'ENETUNREACH':
-        return this.server.disable();
+        this.server.disable();
+        return this.network.jump();
 
       case 'ETIMEDOUT':
         if ( this.reconnect_attempts >= this.network.connection_attempts ) {
@@ -312,19 +264,9 @@ export class IrcConnection extends Connection implements IIrcConnection {
     if ( this.reconnect_delay > Math.pow( 8, 7 ) )
       this.reconnect_delay = Math.pow( 8, 7 );
 
-    this.network.bot.Logger.info( 'setting timer to delay ' + this.server.host + ' reconnection for ' + ( this.reconnect_delay / 1000 ).toString() + ' seconds on network ' + this.network.name );
+    this.network.bot.Logger.info( `setting timer to delay ${ this.server.host } reconnection for ${ this.reconnect_delay / 1000 } seconds on network ${ this.network.name }` );
 
-    if ( this.reconnect_timer )
-
-      this.reconnect_timer.interval = this.reconnect_delay;
-
-    else
-      this.reconnect_timer = this.network.Timer({
-        infinite: false,
-        interval: this.reconnect_delay,
-        reference: 'reconnect timer ' + this.network.name,
-      }, this.network.connect.bind( this.network ) );
-
+    this.reconnect_timer.interval = this.reconnect_delay;
     this.reconnect_timer.start();
   }
 
@@ -335,7 +277,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
   private onRegistered( network: Irc ): void {
     this.registered = true;
     this.reconnect_attempts = 0;
-    this.reconnect_delay = 5000;
+    this.reconnect_delay = IrcConnection.DEFAULT_DELAY;
 
     Hook.post( 'connect', this.network );
 
@@ -381,13 +323,10 @@ export class IrcConnection extends Connection implements IIrcConnection {
     message = message || this.server.host;
 
     if ( !this.socket || this.disconnected() ) {
-      if ( done )
-        return this.pong_timer.stop();
-
-      return;
+        this.pong_timer && this.pong_timer.stop();
     }
 
-    this.send( 'PONG '+ message );
+    this.send( `PONG ${ message }` );
 
     if ( done )
       done();
@@ -406,8 +345,8 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * @param <string> capabilities: The capabilities to request from the Server
   * @return <void>
   */
-  public sendCapReq( capabilities?: string ): void {
-    this.send( 'CAP REQ :' + capabilities );
+  public sendCapReq( capabilities: string = '' ): void {
+    this.send( `CAP REQ :${ capabilities }` );
   }
 
   /**
@@ -419,7 +358,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
   }
 
   private setupListeners(): void {
-    this.network.bot.on( 'registered::'+ this.network.name, this.onRegistered.bind( this ));
+    this.network.bot.on( `registered::${ this.network.name }`, this.onRegistered.bind( this ));
   }
 
   /**
@@ -427,85 +366,19 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * @return <void>
   */
   private sendLogin(): void {
-    var password = this.server.password || this.network.password;
+    let password = this.server.password || this.network.password;
     if ( password )
-      this.send( "PASS " + password );
+      this.send( `PASS ${ password }` );
 
     this.nick = this.network.generate_nick()
 
-    this.send( 'NICK ' +  this.nick );
-    this.send( 'USER ' + this.network.user_name + ' ' + ( _.include( this.network.modes, 'i' ) ? '8' : '0' ) + " * :" + this.network.real_name  );
-  }
-
-  /**
-  * Parse the data received from the server
-  * @param <string> line: The line to parse
-  * @return <void>
-  */
-  private parseMessage( line: string ): void {
-    let time = new Date();
-    console.log( '[' + time.getHours() +':' + time.getMinutes() + ':' + time.getSeconds() + ']', line );
-    let tags: any[] = [];
-
-    if ( !line )
-      return;
-
-    line = line.trim();
-
-    let parse_regex = /^(?:(?:(?:@([^ ]+) )?):(?:([^\s!]+)|([^\s!]+)!([^\s@]+)@?([^\s]+)?) )?(\S+)(?: (?!:)(.+?))?(?: :(.*))?$/i;
-
-    let message = parse_regex.exec( line.replace( /^\r+|\r+$/, '' ) );
-
-    if ( !message ) {
-      this.network.bot.Logger.warn( 'Malformed IRC line: %s', line.replace( /^\r+|\r+$/, '' ) );
-      return;
-    }
-
-    // Extract any tags (message[1])
-    if ( message[ 1 ] ) {
-        tags = message[ 1 ].split( ';' );
-
-        for ( let i = 0; i < tags.length; i++ ) {
-            let tag = tags[ i ].split( '=' );
-            tags[ i ] = { tag: tag[ 0 ], value: tag[ 1 ] };
-        }
-    }
-
-    let msg_obj = {
-        tags:       tags,
-        prefix:     message[ 2 ],
-        nick:       message[ 3 ] || message[ 2 ],  // Nick will be in the prefix slot if a full user mask is not used
-        ident:      message[ 4 ] || '',
-        hostname:   message[ 5 ] || '',
-        command:    message[ 6 ],
-        params:     message[ 7 ] ? message[ 7 ].split( / +/ ) : [],
-        network:    this.network
-    };
-
-    if ( message[ 8 ] ) {
-        msg_obj.params.push( message[ 8 ].replace( /\s+$/, '' ) );
-    }
-
-    try {
-      let command = parseInt( msg_obj.command ) || msg_obj.command;
-      let emission = Constants.IRC[ command ] + '::' + this.network.name;
-
-      if ( Constants.IRC[ command ] === undefined )
-        emission = command.toString().toUpperCase() + '::' + this.network.name;
-
-      this.network.bot.emit( emission, msg_obj );
-    }
-    catch ( e ) {
-      this.network.bot.emit( 'error', {
-        error: e,
-        message: msg_obj
-      });
-    }
+    this.send( `NICK ${ this.nick }` );
+    this.send( `USER ${ this.network.user_name } ${ ( _.include( this.network.modes, 'i' ) ? '8' : '0' ) }" * :${ this.network.real_name }` );
   }
 }
 
 interface IIrcConnection extends IConnection {
-
+  reconnect_attempts: number;
 }
 
 interface IrcConnectionOptions {

@@ -1,10 +1,11 @@
 
 import { Channel, IChannel, IChannelOptions } from '../base/channel';
 import { IrcUser, IIrcUserOptions } from './irc_user';
+import { Network } from '../base/network';
 import { Irc } from './irc';
 import * as _ from 'lodash';
 
-export class IrcChannel extends Channel implements IIrcChannel {
+export class IrcChannel extends Channel<Irc> implements IIrcChannel {
 
   public topic: string = null;
   public users: IrcUser[] = [];
@@ -110,7 +111,7 @@ export class IrcChannel extends Channel implements IIrcChannel {
   * @return <void>
   */
   public send( message: string, force: boolean = false ): void {
-    this.network.bot.Logger.info( 'Received message ' + message)
+    this.network.bot.Logger.info( 'Received message ' + message )
 
     if ( message && ( this.inChannel || force ) )
       this.network.send( message );
@@ -217,7 +218,7 @@ export class IrcChannel extends Channel implements IIrcChannel {
     let instance: boolean = user instanceof IrcUser;
 
     return !!_.find( this.users, ( person ) => {
-      return instance ? person == user : user.name == person;
+      return instance ? person === user : user.name === person;
     });
   }
 
@@ -237,7 +238,7 @@ export class IrcChannel extends Channel implements IIrcChannel {
   }
 }
 
-interface IIrcChannel extends IIrcChannelOptions, IChannel {
+interface IIrcChannel extends IIrcChannelOptions, IChannel<Irc> {
   addUser( user: IrcUser ): IrcUser;
   addUser( user: IIrcUserOptions ): IrcUser;
 

@@ -13,6 +13,9 @@ export class Bind implements IBind {
   public duplex: boolean;
   public unrestricted: boolean;
 
+  public listen_part: boolean;
+  public listen_join: boolean;
+
   // public prefix_source: boolean;
   public prefix: string;
 
@@ -25,19 +28,9 @@ export class Bind implements IBind {
 
   constructor( private bot: Bot, opts: BindOptions, inherit: boolean = false ) {
 
-    [ 'source_network',
-      'source_channel',
-      'target_network',
-      'target_channel'
-    ].forEach( ( prop ) => {
-      if ( opts[ prop ] === undefined || !opts[ prop ].trim().length )
-        throw new Error( `a ${ prop.replace( /_/, ' ' ) } must be defined for binding` );
-    });
+    this.validate( opts );
 
-    if ( opts.source_network == opts.target_network && opts.source_channel == opts.target_channel )
-      throw new Error( 'the target must not be the source' );
-
-    this.active = opts.active == undefined ? true : !!opts.active;
+    this.active = opts.active === undefined ? true : !!opts.active;
 
     if ( !Bind.binds[ opts.source_network ] )
       Bind.binds[ opts.source_network ] = {
@@ -58,7 +51,7 @@ export class Bind implements IBind {
     this.duplex        = opts.duplex === undefined ? true : !!opts.duplex;
     this.unrestricted  = opts.unrestricted === undefined ? true : !!opts.unrestricted;
     this.prefix_source = opts.prefix_source === undefined ? false : !!opts.prefix_source;
-    this.prefix        = opts.prefix || this.prefix || ''; 
+    this.prefix        = opts.prefix || this.prefix || '';
 
 
     this.bot.Logger.info( `Creating binding for ${ this.network }:${ this.channel } <=> ${ this.destination }:${ this.target }` );
@@ -239,7 +232,9 @@ export class Bind implements IBind {
       unrestricted: this.unrestricted,
 
       prefix_source: this.prefix_source,
-      prefix: this.prefix_source ? null : this.prefix
+      prefix: this.prefix_source ? null : this.prefix,
+      listen_join: this.listen_join,
+      listen_part: this.listen_part
     });
 
     if ( inherit ) {
@@ -266,6 +261,30 @@ export class Bind implements IBind {
     });
 
     return msg;
+  }
+
+  private validate( opts ): void {
+    [ 'source_network',
+      'source_channel',
+      'target_network',
+      'target_channel'
+    ].forEach( ( prop ) => {
+      if ( !opts[ prop ] || !opts[ prop ].trim() )
+        throw new Error( `a ${ prop.replace( /_/, ' ' ) } must be defined for binding` );
+    });
+
+    if ( opts.source_network === opts.target_network && opts.source_channel === opts.target_channel )
+      throw new Error( 'the target must not be the source' );
+  }
+
+  private setupListeners() {
+    if ( this.listen_part ) {
+
+    }
+
+    if ( this.listen_join ) {
+
+    }
   }
 
   /**
@@ -316,15 +335,15 @@ export class Bind implements IBind {
   * @return <void>
   * @static
   */
-  public static removeBind( bind: Bind ): void;
-  public static removeBind( network: string, channel: string, destination: string, target: string ): void;
-  public static removeBind( network: any, channel?: string, destination?: string, target?: string ): void {
+  public static removeBind( bind: Bind ): Bind;
+  public static removeBind( network: string, channel: string, destination: string, target: string ): Bind;
+  public static removeBind( network: any, channel?: string, destination?: string, target?: string ): Bind {
     if ( network === undefined ) return;
 
     if ( network instanceof Bind ) {
-      network.bot.Logger.info( `Removing binding for ${ network }:${ channel } <=> ${ destination }:${ target }` );
+      network.bot.Logger.info( `Removing binding for ${ network.network }:${ network.channel } <=> ${ network.destination }:${ network.target }` );
 
-      this.binds[ network.network ].binds.splice( network, 1 );
+      return this.binds[ network.network ].binds.splice( network, 1 ).pop();
     }
     else {
       return this.removeBind( this.findBind( network, channel, destination, target ));
@@ -363,6 +382,8 @@ export interface IBindOptions  extends Options {
   source_channel: string,
   target_network: string,
   target_channel: string,
+  listen_join?: boolean,
+  listen_part?: boolean,
 }
 
 interface Options {

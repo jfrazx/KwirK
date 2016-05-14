@@ -14,7 +14,7 @@ export class Handler {
       let listener = name;
 
       // we should never get a code 0, so this should be ok
-      if ( !!parseInt( name ) ) {
+      if ( !!parseInt( name, 10 ) ) {
         listener = Constants.IRC[ name ];
       }
 
@@ -45,7 +45,7 @@ export class Handler {
     let once = ( event || 'RPL_ENDOFMOTD' ) + '::' + this.network.name;
 
     this.network.bot.once( once, ( message: any ) => {
-      this.network.bot.emit( 'registered::'+ this.network.name, message.network, message.network.active_server );
+      this.network.bot.emit( 'registered::'+ this.network.name, message.network, message.network.connection.server );
     });
   }
 
@@ -56,6 +56,11 @@ export class Handler {
     if ( !message.command ) return;
 
     this.network.bot.Logger.warn( 'Unhandled command ' + message.command, _.omit( message, ['network'] ));
+  }
+
+  public RPL_WELCOME( message: any ): void {
+    // assign actual nick in use to connection
+    this.network.connection.nick = message.params[ 0 ];
   }
 
   public ERR_NOSUCHNICK( message: any ): void {
@@ -134,6 +139,7 @@ export class Handler {
 
     this.network.send( `NICK ${ this.network.connection.nick }` );
   }
+
   public ERR_NICKCOLLISION( message: any ): void {
     this.network.bot.Logger.warn( 'IRC Constant ' + Constants.IRC[ message.command ] + ' handler defined with no implementation' );
   }
@@ -299,10 +305,6 @@ export class Handler {
     let channel = this.network.channel[ message.params[ 2 ] ];
     let names   = message.params[ message.params.length-1 ].split( ' ' );
 
-    _.remove( names, ( name ) => {
-      return this.network.connection.nick === name;
-    });
-
     names.forEach( ( name: string ) => {
       channel.addUser( { name: name } );
     });
@@ -338,9 +340,12 @@ export class Handler {
   * Message of the day handlers
   */
   public ERR_NOMOTD( message: any ): void {
-    Object.freeze( this.network.ircd.motd = [] );
+    this.RPL_MOTDSTART();
+
+    // because it's the default registration listener
+    this.network.bot.emit( 'RPL_ENDOFMOTD::' + this.network.name, message );
   }
-  public RPL_MOTDSTART( message: any ): void {
+  public RPL_MOTDSTART( message?: any ): void {
     this.network.ircd.motd = [];
   }
   public RPL_MOTD( message: any ): void {
@@ -348,6 +353,8 @@ export class Handler {
   }
   public RPL_ENDOFMOTD( message: any ): void {
     Object.freeze( this.network.ircd.motd );
+
+    this.network.bot.emit( 'MOTD::' + this.network.name, this.network, this.network.ircd.motd );
   }
 
 
@@ -572,6 +579,7 @@ export class Handler {
   * Called when a user parts the channel
   * @param <any> message: The parted user details
   * @return <void>
+  * @todo change this to not use Message, its an event...
   */
   private PART( message: any ): void {
     let msg: Message,
@@ -602,6 +610,7 @@ export class Handler {
   * Called when a user joins a channel
   * @param <any> message: The joined user details
   * @return <void>
+  * @todo change this to not use Message, its an event...
   */
   private JOIN( message: any ): void {
     let msg: Message,
@@ -703,7 +712,7 @@ export class Handler {
     /**
     * Did this event happen in a channel or as a private message?
     */
-    msg.events.push( msg.target == msg.channel ? 'public' : 'private' );
+    msg.events.push( msg.target === msg.channel ? 'public' : 'private' );
 
     if ( msg.command.match( /^NOTICE/i ))
       msg.events.push( 'notice' );

@@ -5,7 +5,6 @@ import { EventEmitter } from './events';
 
 /**
 * TODO: use promises or async to fix some of the obvious issues here
-* Turn this into a static class or is this essentially the same???
 */
 module Hook {
   /**
@@ -14,7 +13,7 @@ module Hook {
   export var hooks: { [ event: string ]: { [ which: string ]: IHook[] } } = {};
   export var emitter = new EventEmitter();
 
-  var job: { isBusy: boolean, events: string[] } = { isBusy: false, events: [] };
+  var job: { is_busy: boolean, events: string[] } = { is_busy: false, events: [] };
 
   export function registerPre( event: string, hook: IHook ): boolean {
     return register( event, hook, true );
@@ -25,19 +24,18 @@ module Hook {
   }
 
   export function register( event: string, hook: IHook, pre: boolean ): boolean {
+    let which = pre ? 'pre' : 'post';
 
     if ( !hook.reference || !hook.reference.trim().length )
       return false; // fail in this fashion ?
 
-    var which = pre ? 'pre' : 'post';
-
     if ( exists( event, which, hook.reference ) )
       return false;
 
-    if ( hooks[ event ] === undefined )
+    if ( !hooks[ event ] )
       hooks[ event ] = {};
 
-    if ( hooks[ event ][ which ] === undefined )
+    if ( !hooks[ event ][ which ] )
       hooks[ event ][ which ] = [];
 
     hooks[ event ][ which ].push( hook );
@@ -49,9 +47,9 @@ module Hook {
     if ( !hooks[ event ] || !hooks[ event ][ which ] )
       return false;
 
-    return _.find( hooks[ event ][ which ], ( hook: IHook )=>{
+    return !!_.find( hooks[ event ][ which ], ( hook: IHook )=>{
       return hook.reference === reference;
-    }) ? true : false;
+    });
   }
 
   export function deregisterEvent( event: string ): void {
@@ -74,12 +72,12 @@ module Hook {
   }
 
   export function deregister( event: string, reference: string, pre: boolean = true ) {
-    var which = pre ? 'pre' : 'post';
+    let which = pre ? 'pre' : 'post';
 
     if ( hooks[ event ] && hooks[ event ][ which ] ) {
       if ( isBusy( arguments ) ) { return; }
 
-      _.remove( hooks[ event ][ which ], ( hook: IHook )=> {
+      _.remove( hooks[ event ][ which ], ( hook: IHook ) => {
         return hook.reference === reference;
       });
     }
@@ -98,8 +96,8 @@ module Hook {
   }
 
   function isBusy( ...args: any[] ): boolean {
-    if ( job.isBusy && _.include( job.events, arguments[ 0 ] ) ) {
-      setTimeout( isBusy.caller.apply( Hook, arguments ), 1000 );
+    if ( job.is_busy && _.include( job.events, args[ 0 ] ) ) {
+      setTimeout( isBusy.caller.apply( Hook, args ), 1000 );
       return true;
     }
     return false;
@@ -119,7 +117,7 @@ module Hook {
     job.events.push( event );
 
     for ( let i = 0; i < collection.length; i++ ) {
-      job.isBusy = true;
+      job.is_busy = true;
       var hook = collection[ i ];
       try {
         // use custom or passed context/args ?
@@ -128,10 +126,10 @@ module Hook {
 
         // call the callback
         if ( typeof hook.callback === 'function' ) {
-          args.push( function next( err?:Error, ...results: any[] ){
+          args.push( function next( err?: Error, ...results: any[] ){
             if ( err ) {
               if ( !hook.ignoreErrors ) {
-                emitter.emit( 'error ' + event + ' ' + hook.reference, err );
+                emitter.emit( 'error::' + event + '::' + hook.reference, err );
                 return;
               }
             }
@@ -177,7 +175,7 @@ module Hook {
     * @return <void>
     */
     function unbusy( event: string ): void {
-      job.isBusy = false;
+      job.is_busy = false;
 
       job.events = _.difference( job.events, [ event ] );
     }

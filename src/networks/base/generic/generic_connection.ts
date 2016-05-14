@@ -9,8 +9,8 @@ import { Generic } from './generic_network';
 
 export class GenericConnection extends Connection implements IGenericConnection {
 
-  constructor( public network: Generic, public server: GenericServer ) {
-    super( network, server );
+  constructor( public network: Generic ) {
+    super( network );
   }
 
   public connect(): void {}

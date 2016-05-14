@@ -6,8 +6,8 @@ import * as https from 'https';
 
 export class SlackConnection extends Connection implements ISlackConnection {
 
-  constructor( public network: Slack, public server: SlackServer ) {
-    super( network, server );
+  constructor( public network: Slack ) {
+    super( network );
   }
 
   public connect(): void {

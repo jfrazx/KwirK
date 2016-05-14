@@ -1,4 +1,3 @@
-
 /**
 * All standard and some non-standard numeric replies used by the IRC
 * protocol.
@@ -264,7 +263,7 @@ export module Constants {
     /**
     * @todo Document this constant
     */
-    RPL_NONE           = 300,
+    RPL_NONE = 300,
 
     // Reply format used by USERHOST to list replies to the query list.
     RPL_USERHOST = 302,

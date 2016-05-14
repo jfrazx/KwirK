@@ -12,10 +12,6 @@ import * as _ from 'lodash';
 
 Color.global();
 
-if ( process.env.NODE_ENV !== 'production' ) {
-  require( 'longjohn' );
-}
-
 export class Bot extends EventEmitter implements IBot {
 
     public network: { [ network: string ]: AnyNet } = {};
@@ -25,8 +21,16 @@ export class Bot extends EventEmitter implements IBot {
     public Timer = Timer;
     public Color = Color;
 
-    constructor( config: IAnyNet = {} ) {
+    private static _instance: Bot;
+
+    constructor() {
       super();
+
+      if ( Bot._instance ) {
+        return Bot._instance
+      }
+
+      Bot._instance = this;
 
       this.setMaxListeners( 0 );
 
@@ -91,25 +95,26 @@ export class Bot extends EventEmitter implements IBot {
       else
         network = NetFactory.createNetwork( this, netinfo );
 
+      // if ( !(network instanceof Network) )
+      //   network = <AnyNet>NetFactory.createNetwork( this, network );
+
 
       if ( this.networkExists( network.name ) ) {
-        var err = new Error( 'network ' + network.name + ' already exists' );
+        let err = new Error( `network ${ network.name } already exists` );
 
-        this.emit( 'error', err, 'addNetwork' );
+        this.emit( 'error', err );
 
-        if ( callback ) {
+        if ( callback )
           callback( err, network );
-          return this;
-        }
         else
           throw err;
       }
+      else {
+        this.network[ network.name ] = network;
 
-      this.network[ network.name ] = network;
-
-      if ( callback )
-        callback( null, network );
-
+        if ( callback )
+          callback( null, network );
+      }
       return this;
     }
 
@@ -165,7 +170,7 @@ export class Bot extends EventEmitter implements IBot {
         }));
       }
 
-      return this.network[ name ] !== undefined;
+      return !!this.network[ name ];
     }
 
     /**
@@ -208,7 +213,7 @@ export class Bot extends EventEmitter implements IBot {
     public quit( callback?: Function ): void;
     public quit( message: string, callback?: Function ): void;
     public quit( message: any, callback?: Function ): void {
-      if ( typeof message == 'function' ) {
+      if ( typeof message === 'function' ) {
         callback = message;
         message = undefined;
       }
@@ -219,7 +224,11 @@ export class Bot extends EventEmitter implements IBot {
         this.stop( this.network[ network ], message );
       });
 
-      callback && callback();
+      callback && callback( null );
+
+      process.nextTick( () => {
+        this.Logger.info( 'kwirk bot quitting all networks' );
+      });
     }
 
     /**
@@ -274,7 +283,13 @@ export class Bot extends EventEmitter implements IBot {
     * @private
     */
     private onRegistered( network: AnyNet, server: Server ): void {
-      this.Logger.info( `registered nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
+      this.Logger.info( `registered network ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
+    }
+
+    public static bot(): Bot {
+      if ( this._instance )
+        return this._instance
+      return new Bot();
     }
   }
 

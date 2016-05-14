@@ -1,0 +1,11 @@
+{
+  "name": "kwirk",
+  "version": false,
+  "ambientDependencies": {
+    "async": "github:DefinitelyTyped/DefinitelyTyped/async/async.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645",
+    "eventemitter2": "github:DefinitelyTyped/DefinitelyTyped/eventemitter2/eventemitter2.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645",
+    "lodash": "github:DefinitelyTyped/DefinitelyTyped/lodash/lodash.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645",
+    "node": "registry:dt/node#4.0.0+20160509154515",
+    "winston": "github:DefinitelyTyped/DefinitelyTyped/winston/winston.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645"
+  }
+}

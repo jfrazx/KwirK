@@ -7,7 +7,7 @@ act as a bridge between popular services.
 ## Goals
 
 - support multiple chat protocols  
-  - IRC is the current focus with Slack and HipChat next on the list  
+- IRC is the current focus with Slack and HipChat next on the list  
 - link channels on the different networks  (IRC<->IRC is alpha)
 - transparent channel encryption with DiffieHellman key exchange  
 - http administrative front-end and client area  
@@ -27,12 +27,9 @@ clone the repo: git clone https://github.com/jfrazx/KwirK/
 
 If you haven't setup your environment:  
 
-npm install -g typescript tsd  
+npm install -g typescript typings
 
 npm install  
-tsd install  
-
-( the node.d.ts file I'm using is modified, if it gets overwritten... )  
 
 ## Functionality
 
@@ -41,7 +38,7 @@ Emitted events will (eventually) be catalogued appropriately. In the interim tak
 IRC to IRC binding appears to be working well.
 
 ## Example
-```
+```javascript
 var Kwirk    = require( 'kwirk' )
   , bot      = new Kwirk.Bot();
 
@@ -128,9 +125,9 @@ bot.start();
   - Indentation is two (2) spaces
   - File name to match Object/Class name in lowercase and underscored (irc_server.ts for IrcServer)
   - Treat acronyms in object names as words (Irc instead of IRC)
-  - Variables to be lowercase, _ delimited words (my_var)
+  - Variables to be snake case: lowercase, _ delimited words (my_var)
   - Function names to be camelCase, starting with lowercase (myFunction)
-  - Class names to be CamelCase, starting with uppercase (MyClass)
+  - Class names to be PascalCase, starting with uppercase (MyClass)
 3. Create your feature branch (git checkout -b my-new-feature)
 4. Commit your changes (git commit -am 'Add some feature')
 5. Push to the branch (git push origin my-new-feature)

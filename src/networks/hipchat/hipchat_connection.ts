@@ -6,8 +6,8 @@ import * as https from 'https';
 
 export class HipChatConnection extends Connection implements IHipChatConnection {
 
-  constructor( public network: HipChat, public server: HipChatServer ) {
-    super( network, server );
+  constructor( public network: HipChat ) {
+    super( network );
   }
 
   public connect(): void {

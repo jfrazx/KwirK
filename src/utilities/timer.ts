@@ -1,5 +1,6 @@
 
 import { AnyNet } from '../networks/netfactory';
+import { Network } from '../networks/base/network';
 import * as _ from 'lodash';
 
 export class Timer implements ITimer {
@@ -29,8 +30,8 @@ export class Timer implements ITimer {
   public emitLevel: number;
 
   public busy: boolean;
-  // NodeJS.Timer id
-  public timer: number;
+
+  public timer: NodeJS.Timer;
   public callback: Function;
 
   private _countdown: number;
@@ -159,7 +160,7 @@ export class Timer implements ITimer {
       this.start_wait = Date.now();
 
       if ( this.countdown < 1 )
-        this.countdown = this.countdown;
+        this.countdown = this._countdown;
 
       this.timer = setInterval( this.go.bind( this ), this.interval );
 
@@ -283,7 +284,7 @@ export interface ITimer extends ITimerOptions {
   executions: number;
   errors: Error[];
   busy: boolean;
-  timer: any;
+  timer: NodeJS.Timer;
   start(): void;
   stop(): void;
   started(): boolean;
