@@ -1,7 +1,7 @@
 'use strict';
 
 import { Bind, BindOptions, IBindOptions } from '../../messaging/bind';
-import { Timer, ITimerOptions } from '../../utilities/timer';
+import { TimerJobs, ITimerJobsOptions } from 'timerjobs/src/timerjobs';
 import { AnyNet, IAnyNet } from '../netfactory';
 import { UsersList } from './users_list';
 import { Connection } from './connection';
@@ -11,29 +11,28 @@ import { User } from './user';
 import * as _ from 'lodash';
 
 export abstract class Network implements INetwork {
-
   public name: string;
   public nick: string;
   public Bind: Bind;
-  public users: User[] = [];
-  public channels: Channel[] = [];
-  public channel: { [ chan: string ]: Channel } = {};
+  public users: User<Network>[] = [];
+  public channels: Channel<Network>[] = [];
+  public channel: { [ chan: string ]: Channel<Network> } = {};
   public ident: string;
   public type: string;
   public hostname: string;
-  public connection: Connection;
+  public connection: Connection<Network>;
   public connection_attempts = 0;
 
   protected _connected: boolean = false;
-  protected _enable: boolean;
+  protected _enable: boolean = true;
 
   constructor( public bot: Bot, options: IAnyNet = {} ) {
     if ( !options.name || !options.name.trim().length )
       throw new Error( 'a network name must be supplied' );
 
-    this.name = options.name.toLowerCase();
+    this.name    = options.name.toLowerCase();
     this._enable = options.enable === undefined ? true : !!options.enable;
-    this.type = options.type;
+    this.type    = options.type;
     this.bot.timers[ this.name ] = [];
 
     this.bot.Logger.info( `Created new network ${ this.name } of type ${ this.type }` );
@@ -63,7 +62,16 @@ export abstract class Network implements INetwork {
 
     if ( this.connected() )
       this.disconnect();
-  };
+  }
+
+  /**
+  * See if the network is disabled
+  * @return <boolean>
+  */
+  public disabled(): boolean {
+    return !this.enabled();
+  }
+
 
   /**
   * Are we enabled?
@@ -94,7 +102,7 @@ export abstract class Network implements INetwork {
   * @return <boolean>
   */
   public disconnected(): boolean {
-    return !( this._connected );
+    return !this.connected();
   }
 
   /**
@@ -131,8 +139,8 @@ export abstract class Network implements INetwork {
   * @param <Function> callback: The timer job to callback
   * @return <Timer>
   */
-  public Timer( options: ITimerOptions, callback: ( done: Function )=> void ): Timer {
-    let timer = new this.bot.Timer( <AnyNet><any>this, options, callback );
+  public Timer( options: ITimerJobsOptions, callback: ( done: Function ) => void ): TimerJobs {
+    let timer = new this.bot.Timer( options, callback );
 
     this.bot.timers[ this.name ].push( timer );
 
@@ -144,7 +152,7 @@ export abstract class Network implements INetwork {
   * @return <void>
   */
   public clearTimers(): void {
-    this.bot.emit( 'clear_timers::'+ this.name, this );
+    this.bot.emit( `clear_timers::${ this.name }`, this );
     _.each( this.bot.timers[ this.name ], ( timer ) => {
       timer.stop();
     });
@@ -178,7 +186,7 @@ export abstract class Network implements INetwork {
   * @param <string> name: The name of the user you seek
   * @return <User>
   */
-  public findUser( name: string ): User {
+  public findUser( name: string ): User<Network> {
     return _.find( this.users, ( user ) => {
       return user.name === name;
     });

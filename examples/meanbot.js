@@ -3,10 +3,10 @@
 * Demonstrate how to add an event listener for an evil bot
 */
 
-var Kwirk = require( '../index' )
+const Kwirk = require( '../index' )
   , bot   = new Kwirk.Bot();
 
-var freenode = {
+const freenode = {
   type: 'irc',
   name: 'freenode',
   nick: 'kwirk',
@@ -30,7 +30,7 @@ var freenode = {
   ]
 };
 
-var undernet = {
+const undernet = {
   type: 'irc',
   name: 'undernet',
   servers: [{

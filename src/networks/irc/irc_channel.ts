@@ -22,7 +22,6 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
 
     _.merge( this, _.omit( _.defaults( options, this.defaults() ), [ 'name' ] ));
 
-
     this.network.bot.on('disconnect::' + this.network.name, this.onDisconnect.bind( this ));
   }
 
@@ -71,7 +70,13 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
   * @return <void>
   */
   public join( key?: string ): void {
-    this.send( _.compact( [ "JOIN", this.name, ( key || this.password ) ] ).join( ' ' ), true );
+    this.send(
+      _.compact(
+        ['JOIN',
+          this.name,
+          (key || this.password)
+        ]).join(' '),
+        true);
   }
 
   /**
@@ -111,7 +116,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
   * @return <void>
   */
   public send( message: string, force: boolean = false ): void {
-    this.network.bot.Logger.info( 'Received message ' + message )
+    this.network.bot.Logger.info( 'Received message ' + message );
 
     if ( message && ( this.inChannel || force ) )
       this.network.send( message );
@@ -218,7 +223,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
     let instance: boolean = user instanceof IrcUser;
 
     return !!_.find( this.users, ( person ) => {
-      return instance ? person === user : user.name === person;
+      return (instance ? user.name : user ) === person.name;
     });
   }
 
@@ -228,13 +233,22 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
     this.dispose();
   }
 
+  private setupListeners(): void {
+    this.network.bot.on( `join::${ this.network.name }::${ this.name }`, this.on_join.bind( this ) );
+  }
+
+  private on_join( user: IrcUser ): void {
+    this.network.bot.Logger.info( `user ${ user.name } joined ${ this.name } on ${ this.network.name }` );
+    this.addUser( user );
+  }
+
   private defaults(): IIrcChannelOptions {
     return {
       name: null,
       modes: [],
       password: null,
       key: null
-    }
+    };
   }
 }
 

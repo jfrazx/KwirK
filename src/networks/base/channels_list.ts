@@ -3,13 +3,13 @@
 import { Channel } from './channel';
 import { Network } from './network';
 
-export class ChannelsList<T extends Channel<N>, N extends Network> implements IChannelsList<T, N> {
+export class ChannelsList<N extends Network, T extends Channel<N>> implements IChannelsList<N, T> {
 
-  constructor( public network: N, private Channel: { new(network: N, { name: string }): T } ) {
+  constructor(public network: N, private Channel: { new(network: N, options: { name: string }): T }) {
 
   }
 }
 
-export interface IChannelsList<T extends Channel<N>, N extends Network> {
+export interface IChannelsList<N, T> {
 
 }

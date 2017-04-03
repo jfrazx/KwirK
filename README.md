@@ -4,6 +4,9 @@
 KwirK aims to be a sophisticated, multi-network, multi-protocol utility bot that can
 act as a bridge between popular services.
 
+-- THIS PACKAGE IS CONSIDERED ALPHA QUALITY --
+-- PLEASE OPEN ISSUES TO REPORT BUGS --
+
 ## Goals
 
 - support multiple chat protocols  
@@ -12,7 +15,7 @@ act as a bridge between popular services.
 - transparent channel encryption with DiffieHellman key exchange  
 - http administrative front-end and client area  
 - ability to link multiple bots  
-- eggdrop like command console, but not with telnet  
+- more secure, eggdrop like command console
 - plugin system  
 - translation, in channel, channel to channel, and pm to pm as proxy
 - much more, this list will certainly expand  

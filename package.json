@@ -9,17 +9,20 @@
     "test": "test"
   },
   "dependencies": {
-    "async": "^1.4.2",
-    "eventemitter2": "^0.4.14",
+    "async": "^2.2.0",
+    "bluebird": "^3.5.0",
+    "eventemitter2": "^4.1.0",
     "hashish": "0.0.4",
     "iconv-lite": "^0.4.13",
-    "lodash": "^3.10.1",
-    "winston": "^1.0.1"
+    "lodash": "^4.17.4",
+    "timerjobs": "^1.4.0",
+    "winston": "^2.3.1"
   },
   "devDependencies": {
-    "chai": "^3.3.0",
-    "longjohn": "^0.2.9",
-    "mocha": "^2.3.2"
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3",
+    "tslint": "^5.0.0",
+    "typescript": "^2.2.2"
   },
   "scripts": {
     "test": "npm run node-test",

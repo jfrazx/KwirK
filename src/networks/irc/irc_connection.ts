@@ -1,8 +1,8 @@
 
 import { Connection, IConnection } from '../base/connection';
 import { MessageBuffer } from './message_buffer';
-import { Timer } from '../../utilities/timer';
 import * as Hook from '../../utilities/hook';
+import { TimerJobs } from 'timerjobs/src/timerjobs';
 import { IrcServer } from './irc_server';
 import { Handler } from './handler';
 import { Bot } from '../../bot';
@@ -11,7 +11,7 @@ import { Irc } from './irc';
 import * as tls  from 'tls';
 import * as _ from 'lodash';
 
-export class IrcConnection extends Connection implements IIrcConnection {
+export class IrcConnection extends Connection<Irc> implements IIrcConnection {
 
   public reconnect_attempts = 0;
   public request_disconnect: boolean;
@@ -22,9 +22,9 @@ export class IrcConnection extends Connection implements IIrcConnection {
   // the actual nick in use
   public nick: string;
 
-  private reconnect_timer: Timer;
+  private reconnect_timer: TimerJobs;
   private handler: Handler;
-  private pong_timer: Timer;
+  private pong_timer: TimerJobs;
   private _ping_delay: number;
   private message_buffer: MessageBuffer;
   public reconnect_delay: number = IrcConnection.DEFAULT_DELAY;
@@ -56,10 +56,10 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * Connect to the IRCD
   * @return <void>
   */
-  public connect(): void {
+  public connect( callback?: Function ): void {
     if ( this.connected() ) {
-      this.network.bot.emit( 'network_already_connected::'+ this.network.name, this.network, this.server );
-      return;
+      this.network.bot.emit( `network_already_connected::${ this.network.name }`, this.network, this.server );
+      return callback && callback( null );
     }
 
     let socket_connect_event: string;
@@ -91,6 +91,8 @@ export class IrcConnection extends Connection implements IIrcConnection {
 
     this.socket.on( socket_connect_event, this.connectionSetup.bind( this ) )
       .on( 'error', this.onError.bind( this ) );
+
+    callback && callback ( null );
   }
 
   get ping_delay(): number {
@@ -98,17 +100,18 @@ export class IrcConnection extends Connection implements IIrcConnection {
   }
 
   set ping_delay( delay: number ) {
-    let to_milliseconds = delay * 1000;
-      if ( !to_milliseconds
-          || ( Math.floor(delay) < IrcConnection.MIN_PING
-              && ( to_milliseconds > IrcConnection.MAX_PING
-                  || to_milliseconds < IrcConnection.MIN_PING ) )
-          || delay > IrcConnection.MAX_PING ) {
-        delay = IrcConnection.DEFAULT_PING;
-      }
-      else if ( delay < IrcConnection.MIN_PING && to_milliseconds <= IrcConnection.MAX_PING ) {
-        delay = to_milliseconds;
-      }
+    const to_milliseconds = delay * 1000;
+
+    if ( !to_milliseconds
+        || ( Math.floor(delay) < IrcConnection.MIN_PING
+            && ( to_milliseconds > IrcConnection.MAX_PING
+                || to_milliseconds < IrcConnection.MIN_PING ) )
+        || delay > IrcConnection.MAX_PING ) {
+      delay = IrcConnection.DEFAULT_PING;
+    }
+    else if ( delay < IrcConnection.MIN_PING && to_milliseconds <= IrcConnection.MAX_PING ) {
+      delay = to_milliseconds;
+    }
 
     this._ping_delay = Math.floor( delay );
 
@@ -165,7 +168,7 @@ export class IrcConnection extends Connection implements IIrcConnection {
     this.send( `QUIT :${ message }` );
     this.send( null );
 
-    setTimeout( ()=> {
+    setTimeout( () => {
       process.nextTick( this.end.bind( this ) );
     }, 100 );
 
@@ -235,6 +238,10 @@ export class IrcConnection extends Connection implements IIrcConnection {
 
         return this.reconnect();
       case 'ENETUNREACH':
+        this.server.disable();
+        return this.network.jump();
+
+      case 'ENOTFOUND':
         this.server.disable();
         return this.network.jump();
 
@@ -366,18 +373,18 @@ export class IrcConnection extends Connection implements IIrcConnection {
   * @return <void>
   */
   private sendLogin(): void {
-    let password = this.server.password || this.network.password;
+    const password = this.server.password || this.network.password;
     if ( password )
       this.send( `PASS ${ password }` );
 
-    this.nick = this.network.generate_nick()
+    this.nick = this.network.generate_nick();
 
     this.send( `NICK ${ this.nick }` );
-    this.send( `USER ${ this.network.user_name } ${ ( _.include( this.network.modes, 'i' ) ? '8' : '0' ) }" * :${ this.network.real_name }` );
+    this.send( `USER ${ this.network.user_name } ${ ( _.includes( this.network.modes, 'i' ) ? '8' : '0' ) }" * :${ this.network.real_name }` );
   }
 }
 
-interface IIrcConnection extends IConnection {
+interface IIrcConnection extends IConnection<Irc> {
   reconnect_attempts: number;
 }
 

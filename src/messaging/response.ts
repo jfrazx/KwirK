@@ -8,15 +8,15 @@ import { Message } from './message';
 * @todo work in progress...
 */
 
-export class Response implements IResponse {
+export class Response<N extends Network> implements IResponse<N> {
 
   public message: string;
-  public target: User | Channel;
-  public origin_user: User;
-  public origin_channel: Channel;
+  public target: User<N> | Channel<N>;
+  public origin_user: User<N>;
+  public origin_channel: Channel<N>;
 
-  constructor( message: Message );
-  constructor( options: IResponseOptions );
+  constructor( message: Message<N> );
+  constructor( options: IResponseOptions<N> );
   constructor( options: any ) {
     this.message        = options.message || options.content;
     this.target         = options.target;
@@ -25,13 +25,13 @@ export class Response implements IResponse {
   }
 }
 
-export interface IResponse extends IResponseOptions {
+export interface IResponse<N extends Network> extends IResponseOptions<N> {
 
 }
 
-export interface IResponseOptions {
+export interface IResponseOptions<N extends Network> {
   message: string;
-  origin_user: User;
-  origin_channel: Channel;
-  target: User | Channel;
+  origin_user: User<N>;
+  origin_channel: Channel<N>;
+  target: User<N> | Channel<N>;
 }

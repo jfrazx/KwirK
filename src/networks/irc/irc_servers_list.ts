@@ -22,7 +22,7 @@ export class IrcServersList {
   * @return <void>
   */
   public addServer( serve: IIrcServerOptions, callback?: Function ): IrcServersList {
-    let server = new IrcServer( this.network, serve );
+    const server = new IrcServer( this.network, serve );
 
     if ( this.serverExists( server.host ) ) {
       this.network.bot.emit( `server_exists::${ this.network.name }`, this, server );
@@ -49,9 +49,9 @@ export class IrcServersList {
   public serverExists( host: IrcServer ): boolean;
   public serverExists( host: string ): boolean;
   public serverExists( host: any ): boolean {
-    let instance = host instanceof IrcServer
+    const instance = host instanceof IrcServer;
 
-    return !!_.find( this.servers, ( server )=> {
+    return !!_.find( this.servers, ( server ) => {
       return host === ( instance ? server.host : server );
     });
   }
@@ -73,9 +73,9 @@ export class IrcServersList {
   * @return <IrcServer>
   */
   public removeServer( server: IrcServer ): IrcServer {
-    let index: number;
+    const index = this.servers.indexOf( server );
 
-    if( ~(index = this.servers.indexOf( server )) ){
+    if ( ~(index) ) {
 
       return this.servers.slice( index, 1 ).pop();
 
@@ -87,7 +87,7 @@ export class IrcServersList {
   }
 
   public enableAll(): void {
-    _.each( this.servers, ( server )=> {
+    _.each( this.servers, ( server ) => {
       server.enable();
     });
   }
@@ -98,9 +98,9 @@ export class IrcServersList {
   * @return <Server>
   */
   public activeServer( index?: number ): IrcServer {
-    var server: IrcServer;
+    let server: IrcServer;
 
-    if( typeof index === 'number' &&
+    if ( typeof index === 'number' &&
              isFinite( index ) &&
              Math.floor( index ) === index
              && _.inRange( index, 0, this.servers.length ) ) {

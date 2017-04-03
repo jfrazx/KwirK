@@ -4,7 +4,7 @@ import { SlackServer } from './slack_server';
 import { Slack } from './slack';
 import * as https from 'https';
 
-export class SlackConnection extends Connection implements ISlackConnection {
+export class SlackConnection extends Connection<Slack> implements ISlackConnection {
 
   constructor( public network: Slack ) {
     super( network );
@@ -23,6 +23,6 @@ export class SlackConnection extends Connection implements ISlackConnection {
   }
 }
 
-interface ISlackConnection extends IConnection {
+interface ISlackConnection extends IConnection<Slack> {
 
 }

@@ -2,7 +2,7 @@
 import { Channel, IChannelOptions, IChannel } from '../base/channel';
 import { Slack } from './slack';
 
-export class SlackChannel extends Channel implements ISlackChannel {
+export class SlackChannel extends Channel<Slack> implements ISlackChannel {
 
 
   constructor( network: Slack, options: ISlackChannelOptions ) {
@@ -29,7 +29,7 @@ export class SlackChannel extends Channel implements ISlackChannel {
   }
 }
 
-interface ISlackChannel extends ISlackChannelOptions, IChannel {
+interface ISlackChannel extends ISlackChannelOptions, IChannel<Slack> {
 
 }
 

@@ -11,22 +11,22 @@ export interface IEventEmitter extends EventEmitter {}
 
 export interface IEventEmitterConfiguration {
     /**
-     * use wildcards
-     */
+    * use wildcards
+   */
     wildcard?: boolean;
 
     /**
-     * the delimiter used to segment namespaces, defaults to `.`.
-     */
+    * the delimiter used to segment namespaces, defaults to `.`.
+    */
     delimiter?: string;
 
     /**
-     * if you want to emit the newListener event set to true.
-     */
+    * if you want to emit the newListener event set to true.
+    */
     newListener?: boolean;
 
     /**
-     * max listeners that can be assigned to an event, default 10.
-     */
+    * max listeners that can be assigned to an event, default 10.
+    */
     maxListeners?: number;
 }

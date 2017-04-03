@@ -6,7 +6,7 @@
 import { Server, IServer, IServerOptions } from '../server';
 import { Generic } from './generic_network';
 
-export class GenericServer extends Server implements IGenericServer {
+export class GenericServer extends Server<Generic> implements IGenericServer {
 
   constructor( public network: Generic, options: IGenericServerOptions ) {
     super( network, options.host, null );
@@ -18,7 +18,7 @@ export class GenericServer extends Server implements IGenericServer {
 
 }
 
-interface IGenericServer extends IServer, IGenericServerOptions {
+interface IGenericServer extends IServer<Generic>, IGenericServerOptions {
 
 }
 

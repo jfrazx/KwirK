@@ -7,7 +7,7 @@ import { Connection, IConnection } from '../connection';
 import { GenericServer } from './generic_server';
 import { Generic } from './generic_network';
 
-export class GenericConnection extends Connection implements IGenericConnection {
+export class GenericConnection extends Connection<Generic> implements IGenericConnection {
 
   constructor( public network: Generic ) {
     super( network );
@@ -20,6 +20,6 @@ export class GenericConnection extends Connection implements IGenericConnection 
   public end(): void {}
 }
 
-interface IGenericConnection extends IConnection {
+interface IGenericConnection extends IConnection<Generic> {
 
 }

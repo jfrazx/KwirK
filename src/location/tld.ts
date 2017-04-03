@@ -1,8 +1,8 @@
 
-export module TLD {
+export namespace TLD {
   export const TLD = {
 
-  }
+  };
 }
 
 export interface ITLD {

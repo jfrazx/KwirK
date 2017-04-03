@@ -4,9 +4,9 @@
 * @TODO turn this into a TS module or create d.ts for irc-colors
 */
 
-var Hash = require('hashish');
+const Hash = require('hashish');
 
-var colors = {
+const colors = {
   '00': ['white'],
   '01': ['black'],
   '02': ['navy'],
@@ -25,7 +25,7 @@ var colors = {
   '15': ['lightgray', 'lightgrey', 'silver']
 };
 
-var styles = {
+const styles = {
   '\x0F': 'normal',
   '\x1F': 'underline',
   '\x02': 'bold',
@@ -34,21 +34,21 @@ var styles = {
 
 
 // coloring character
-var c = '\x03';
-var pos2 = c.length + 2;
-var zero = '\u200B';
+const c = '\x03';
+const pos2 = c.length + 2;
+const zero = '\u200B';
 
 // make color functions for both foreground and background
 Hash( colors ).forEach( function( colornames: string[], code: string ) {
 
   // foreground
-  var fg = function( str: string ) {
+  const fg = function( str: string ) {
     return c + code + zero + str + c;
   };
 
   // background
-  var bg = function( str: string ) {
-      var pos = str.indexOf( c );
+  const bg = function( str: string ) {
+      const pos = str.indexOf( c );
       if ( pos !== 0 ) {
         return c + '01,' + code + str + c;
       } else {
@@ -72,17 +72,17 @@ Hash( styles ).forEach(function( style: string, code: string ) {
 
 
 // extras
-exports.rainbow = function( str: string, colorArr?: string[] ):string {
-  var rainbow = [ 'red', 'olive', 'yellow', 'green',
+exports.rainbow = function( str: string, colorArr?: string[] ): string {
+  const rainbow = [ 'red', 'olive', 'yellow', 'green',
                  'blue', 'navy', 'violet' ];
   colorArr = colorArr ? colorArr : rainbow;
-  var l = colorArr.length;
-  var i = 0;
+  const length = colorArr.length;
+  let index    = 0;
 
   return str
     .split( '' )
     .map(function( c ) {
-      return c !== ' ' ? exports[ colorArr[ i++ % l ]]( c ) : c;
+      return c !== ' ' ? exports[ colorArr[ index++ % length ]]( c ) : c;
     })
     .join( '' );
 };
@@ -100,10 +100,10 @@ exports.stripColorsAndStyle = function( str: string ): string {
 };
 
 // adds all functions to each other so they can be chained
-var addGetters = function( f1: any, name: string ): void {
+const addGetters = function( f1: any, name: string ): void {
   Hash( exports ).exclude( [ name ] ).forEach( function( f2: any, name: string ) {
     f1.__defineGetter__( name, function() {
-      var f = function( str: string ) { return f2( f1( str )); };
+      const f = function( str: string ) { return f2( f1( str )); };
       addGetters(f, name);
       return f;
     });
@@ -116,7 +116,7 @@ Hash( exports ).forEach( function( f: any, name: string ) {
 
 // adds functions to global String object
 exports.global = function() {
-  var t: any, irc = {};
+  let t: any, irc = {};
 
   /**
   * TypeScript likes defineProperty much better than __defineGetter__
@@ -131,10 +131,10 @@ exports.global = function() {
   //   return irc;
   // });
 
-  var addGlobalGetters = function( f1: any, name: string ) {
+  const addGlobalGetters = function( f1: any, name: string ) {
     Hash( exports ).exclude( [ name ] ).forEach( function( f2: any, name: string ) {
       f1.__defineGetter__( name, function() {
-        var f = function() { return f2( f1( t ) ); };
+        const f = function() { return f2( f1( t ) ); };
         addGetters( f, name );
         return f;
       });
@@ -142,7 +142,7 @@ exports.global = function() {
   };
 
   Hash( exports ).exclude( [ 'global' ] ).forEach( function( f1: any, name: string ) {
-    var f = function() { return f1( t ); };
+    const f = function() { return f1( t ); };
     addGlobalGetters( f, name );
     irc[ name ] = f;
   });

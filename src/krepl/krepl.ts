@@ -22,7 +22,7 @@ export class KREPL implements IKReplOptions {
   public useGlobal: boolean;
   public ignoreUndefined: boolean;
   public writer: Function;
-  public replMode: string;
+  public replMode: symbol;
   public pfx: any;
   public key: any;
   public passphrase: string;
@@ -39,12 +39,12 @@ export class KREPL implements IKReplOptions {
   constructor( public bot: Bot, options?: IKReplOptions ) {
     _.merge( this, _.defaults( options, this.defaults() ) );
 
-    this.server = new tls.Server( this.port, this.host, 511, ( socket: tls.TLSSocket )=> {
+    this.server = new tls.Server( this.port, this.host, 511, ( socket: tls.TLSSocket ) => {
       socket.setEncoding('utf8');
-      socket.on( 'data', ( data: any )=> {
+      socket.on( 'data', ( data: any ) => {
         console.log( data );
-      } );
-    } );
+      });
+    });
 
   }
 
@@ -56,7 +56,7 @@ export class KREPL implements IKReplOptions {
     return {
       port: 31415,
       host: '0.0.0.0',
-      prompt: "<kwirk::repl> ",
+      prompt: '<kwirk::repl> ',
       input: null,
       output: null,
       terminal: false,
@@ -65,7 +65,7 @@ export class KREPL implements IKReplOptions {
       useGlobal: false,
       ignoreUndefined: false,
       writer: null,
-      replMode: 'REPL_MODE_MAGIC',
+      replMode: Symbol('repl.REPL_MODE_MAGIC'),
       pfx: null,
       key: null,
       passphrase: null,

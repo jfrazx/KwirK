@@ -4,10 +4,10 @@ import { HipChatServer } from './hipchat_server';
 import { HipChat } from './hipchat';
 import * as https from 'https';
 
-export class HipChatConnection extends Connection implements IHipChatConnection {
+export class HipChatConnection extends Connection<HipChat> implements IHipChatConnection {
 
-  constructor( public network: HipChat ) {
-    super( network );
+  constructor(public network: HipChat) {
+    super(network);
   }
 
   public connect(): void {
@@ -23,6 +23,6 @@ export class HipChatConnection extends Connection implements IHipChatConnection 
   }
 }
 
-interface IHipChatConnection extends IConnection {
+interface IHipChatConnection extends IConnection<HipChat> {
 
 }

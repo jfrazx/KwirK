@@ -5,11 +5,11 @@ import { Network } from './network';
 import { User } from './user';
 import * as _ from 'lodash';
 
-export class UsersList<T extends User, N extends Network> implements IUsersList<T, N> {
+export class UsersList<N extends Network, T extends User<N>> implements IUsersList<T, N> {
 
   private users: { [name: string]: T } = {};
 
-  constructor( public network: N, private User: { new(network: N, { name: string }): T }  ) {
+  constructor( public network: N, private User: { new(network: N, options: { name: string }): T }  ) {
 
   }
 
@@ -33,7 +33,7 @@ export class UsersList<T extends User, N extends Network> implements IUsersList<
   }
 }
 
-interface IUsersList<T extends User, N extends Network> {
+interface IUsersList<T, N> {
   network: N;
 
   find( name: string ): T;

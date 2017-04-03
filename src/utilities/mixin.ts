@@ -1,17 +1,22 @@
 
-export class Mixin {
-  static apply(derived: any, mixins: any[]) {
-    mixins.forEach(base => {
-      if ( base.prototype ) {
+export module Mixin {
+  export function mix(derived: any, ...mixable: any[]): any {
+    const proto = derived.prototype || derived;
+    mixable.forEach(base => {
+      if (base.prototype) {
         Object.getOwnPropertyNames(base.prototype).forEach(name => {
-            derived.prototype[name] = base.prototype[name];
+          if (name !== 'constructor') {
+            proto[name] = base.prototype[name];
+          }
         });
       }
       else {
-        Object.keys( base ).forEach( name => {
-          derived.prototype[name] = base[name];
+        Object.keys(base).forEach(name => {
+          proto[name] = base[name];
         });
       }
     });
+
+    return derived;
   }
 }

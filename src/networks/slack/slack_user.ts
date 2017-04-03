@@ -2,10 +2,10 @@
 import { User, IUser, IUserOptions } from '../base/user';
 import { Slack } from './slack';
 
-export class SlackUser extends User implements ISlackUser {
+export class SlackUser extends User<Slack> implements ISlackUser {
 
   constructor( network: Slack, options: ISlackUserOptions ) {
-    super( network, options );
+    super(network, options);
   }
 
   public action( message: string ): void {
@@ -29,7 +29,7 @@ export class SlackUser extends User implements ISlackUser {
   }
 }
 
-export interface ISlackUser extends ISlackUserOptions, IUser {
+export interface ISlackUser extends ISlackUserOptions, IUser<Slack> {
 
 }
 

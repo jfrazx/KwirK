@@ -2,7 +2,7 @@
 import { Server, IServer, IServerOptions } from '../base/server';
 import { Slack } from './slack';
 
-export class SlackServer extends Server implements ISlackServer {
+export class SlackServer extends Server<Slack> implements ISlackServer {
 
   constructor( public network: Slack, options: ISlackServerOptions ) {
     super( network, options.host, null );
@@ -24,7 +24,7 @@ export class SlackServer extends Server implements ISlackServer {
 
 }
 
-interface ISlackServer extends IServer, ISlackServerOptions {
+interface ISlackServer extends IServer<Slack>, ISlackServerOptions {
 
 }
 

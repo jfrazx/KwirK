@@ -2,30 +2,28 @@
 
 import { Constants } from '../../constants/constants';
 import { Message } from '../../messaging/message';
+import * as _ from '../../utilities/lodash';
 import { Irc } from './irc';
-import * as _ from 'lodash';
 
 export class Handler {
-
   constructor( public network: Irc ) {
-
-    _.each ( _.compact( _.unique( _.keys( Constants.IRC ) ) ), ( name ) => {
-      let event = name + '::' + this.network.name;
+    _.each ( _.compact( _.uniq( _.keys( Constants.IRC ) ) ), ( name ) => {
+      const event = `${ name }::${ this.network.name }`;
       let listener = name;
 
       // we should never get a code 0, so this should be ok
-      if ( !!parseInt( name, 10 ) ) {
-        listener = Constants.IRC[ name ];
+      if (parseInt(name, 10)) {
+        listener = Constants.IRC[name];
       }
 
       try {
         this.network.bot.on( event, this[ listener ].bind( this ) );
       }
       catch ( e ) {
-        this.network.bot.Logger.warn( 'IRC Constant ' + listener + ' defined with no handler' );
+        this.network.bot.Logger.warn(`IRC Constant ${ listener } defined with no handler`);
 
         this.network.bot.on( event, ( message: any ) => {
-          this.network.bot.Logger.warn( 'IRC Constant event ' + message.command + ' occured with no handler' );
+          this.network.bot.Logger.warn(`IRC Constant event ${ message.command } occured with no handler`);
         });
       }
     });
@@ -33,7 +31,7 @@ export class Handler {
     /**
     * If we receive unknown emits
     */
-    this.network.bot.on( 'UNKNOWN::'+ this.network.name, this.UNKNOWN.bind( this ) );
+    this.network.bot.on(`UNKNOWN::${ this.network.name }`, this.UNKNOWN.bind(this));
   }
 
   /**
@@ -42,10 +40,10 @@ export class Handler {
   * @return <void>
   */
   public setRegistrationListener( event?: string ): void {
-    let once = ( event || 'RPL_ENDOFMOTD' ) + '::' + this.network.name;
+    const once = `${ (event || 'RPL_ENDOFMOTD' ) }::${ this.network.name }`;
 
     this.network.bot.once( once, ( message: any ) => {
-      this.network.bot.emit( 'registered::'+ this.network.name, message.network, message.network.connection.server );
+      this.network.bot.emit(`registered::${ this.network.name }`, message.network, message.network.connection.server );
     });
   }
 
@@ -55,7 +53,7 @@ export class Handler {
   public UNKNOWN( message: any ): void {
     if ( !message.command ) return;
 
-    this.network.bot.Logger.warn( 'Unhandled command ' + message.command, _.omit( message, ['network'] ));
+    this.network.bot.Logger.warn(`Unhandled command ${ message.command }`, _.omit( message, ['network'] ));
   }
 
   public RPL_WELCOME( message: any ): void {
@@ -302,8 +300,8 @@ export class Handler {
   }
 
   public RPL_NAMEREPLY( message: any ): void {
-    let channel = this.network.channel[ message.params[ 2 ] ];
-    let names   = message.params[ message.params.length-1 ].split( ' ' );
+    const channel = this.network.channel[ message.params[ 2 ] ];
+    const names   = message.params[ message.params.length-1 ].split( ' ' );
 
     names.forEach( ( name: string ) => {
       channel.addUser( { name: name } );
@@ -343,7 +341,7 @@ export class Handler {
     this.RPL_MOTDSTART();
 
     // because it's the default registration listener
-    this.network.bot.emit( 'RPL_ENDOFMOTD::' + this.network.name, message );
+    this.network.bot.emit( `RPL_ENDOFMOTD::${ this.network.name }`, message );
   }
   public RPL_MOTDSTART( message?: any ): void {
     this.network.ircd.motd = [];
@@ -354,9 +352,8 @@ export class Handler {
   public RPL_ENDOFMOTD( message: any ): void {
     Object.freeze( this.network.ircd.motd );
 
-    this.network.bot.emit( 'MOTD::' + this.network.name, this.network, this.network.ircd.motd );
+    this.network.bot.emit( `MOTD::${ this.network.name }`, this.network, this.network.ircd.motd );
   }
-
 
   public RPL_YOUREOPER( message: any ): void {
     this.network.bot.Logger.warn( 'IRC Constant ' + Constants.IRC[ message.command ] + ' handler defined with no implementation' );
@@ -512,8 +509,8 @@ export class Handler {
     this.network.bot.Logger.warn( 'IRC Constant ' + Constants.IRC[ message.command ] + ' handler defined with no implementation' );
   }
 
-  private PING( message: any ): void {
-    this.network.connection.pong( message.params[ 0 ] );
+  private PING(message: any): void {
+    this.network.connection.pong(message.params[0]);
   }
 
   /**
@@ -553,7 +550,7 @@ export class Handler {
             this.network.connection.capabilities.requested = _.difference( this.network.connection.capabilities.requested, capabilities );
           }
           if ( this.network.connection.capabilities.enabled.length ) {
-            if ( _.contains( this.network.connection.capabilities.enabled, 'sasl' ) ) {
+            if ( _.includes( this.network.connection.capabilities.enabled, 'sasl' ) ) {
               this.network.send( 'AUTHENTICATE PLAIN' );
             }
             else {
@@ -582,7 +579,7 @@ export class Handler {
   * @todo change this to not use Message, its an event...
   */
   private PART( message: any ): void {
-    let msg: Message,
+    let msg: Message<Irc>,
         nick: string;
 
     message.channel = this.network.addChannel( { name: message.params[ 0 ] } );
@@ -591,14 +588,15 @@ export class Handler {
     nick = message.nick;
 
     // the bot parted the channel
-    if ( nick === this.network.connection.nick )
+    if ( nick === this.network.connection.nick ) {
       message.channel.inChannel = false;
+    }
     else {
       message.user = this.network.findUser( nick );
       message.channel.removeUser( message.user );
     }
 
-    msg = new Message( message );
+    msg = new Message<Irc>( message );
 
     msg.events.push( 'part' );
     msg.events.push( 'public' );
@@ -613,13 +611,12 @@ export class Handler {
   * @todo change this to not use Message, its an event...
   */
   private JOIN( message: any ): void {
-    let msg: Message,
+    let msg: Message<Irc>,
         nick: string,
         ident: string,
         hostname: string;
 
-    message.channel = this.network.addChannel( { name: message.params[ 0 ] } );
-    message.target  = message.channel;
+    message.channel = this.network.addChannel({ name: message.params[ 0 ] });
 
     nick = message.nick;
     ident = message.ident;
@@ -637,17 +634,10 @@ export class Handler {
     else {
       message.user = message.channel.addUser({
           name: nick,
-          ident: ident,
-          hostname: hostname
+          ident,
+          hostname
       });
     }
-
-    msg = new Message( message );
-
-    msg.events.push( 'join' );
-    msg.events.push( 'public' );
-
-    this.route( msg );
   }
 
   /**
@@ -655,7 +645,7 @@ export class Handler {
   * @param <any> message: The message object literal to send
   * @return <void>
   */
-  private route( message: Message ): void;
+  private route( message: Message<Irc> ): void;
   private route( message: any ): void {
     if ( !(message instanceof Message ))
       message = new Message( message );
@@ -669,7 +659,10 @@ export class Handler {
   * @return <void>
   */
   private PRIVMSG( message: any ): void {
-    this.defineMessage( message );
+    console.log( message instanceof Message );
+    console.log( message.content );
+    console.log( _.omit( message, ['network']));
+    this.route( message );
   }
 
   /**
@@ -687,7 +680,7 @@ export class Handler {
   * @return <void>
   */
   private defineMessage( message: any ): void {
-    let msg: Message,
+    let msg: Message<Irc>,
         match: RegExpExecArray;
 
     message.channel = this.network.channel[ message.params[ 0 ].toLowerCase() ];
@@ -698,16 +691,17 @@ export class Handler {
 
     message.message = message.params[ 1 ];
 
+    // match ctcp
     match = /^(\u0001)(.*)(\u0001)$/.exec( message.params[ 1 ] );
 
-    if ( match && message.target == message.user ) {
+    if ( match && message.target === message.user ) {
       // we don't want it to match action
       if ( !message.message.substr( 1, 6 ).match( /^ACTION$/ ) ) {
         return this.handleCTCP( message, match );
       }
     }
 
-    msg = new Message( message );
+    msg = new Message<Irc>(message);
 
     /**
     * Did this event happen in a channel or as a private message?
@@ -728,7 +722,7 @@ export class Handler {
     else {
       msg.events.push( 'unknown' );
 
-      this.network.bot.Logger.warn( `Unknown IRC event with command ${ msg.command } and message ${ msg.message }` );
+      this.network.bot.Logger.warn(`Unknown IRC event with command ${ msg.command } and message ${ msg.content }`);
     }
 
     this.route( msg );
@@ -737,11 +731,11 @@ export class Handler {
   /**
   * @todo handle VERSION , SOURCE and other CTCP queries
   */
-  private handleCTCP( message: any, match: RegExpExecArray ): void {
+  private handleCTCP( message: Message<Irc>, match: RegExpExecArray ): void {
     console.log( 'ctcp', match );
   }
 
-  private MODE( message: any ): void {
-    this.network.bot.Logger.warn( 'IRC Constant ' + Constants.IRC[ message.command ] + ' handler defined with no implementation' );
+  private MODE( message: Message<Irc> ): void {
+    this.network.bot.Logger.warn(`IRC Constant ${ Constants.IRC[ message.command ] } handler defined with no implementation`);
   }
 }

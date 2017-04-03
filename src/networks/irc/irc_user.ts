@@ -2,7 +2,7 @@
 import { User, IUserOptions, IUser } from '../base/user';
 import { Irc } from './irc';
 
-export class IrcUser extends User implements IIrcUser {
+export class IrcUser extends User<Irc> implements IIrcUser {
 
   public ident: string;
   public hostname: string;
@@ -55,7 +55,7 @@ export class IrcUser extends User implements IIrcUser {
   }
 }
 
-interface IIrcUser extends IIrcUserOptions, IUser {
+interface IIrcUser extends IIrcUserOptions, IUser<Irc> {
 
 }
 

@@ -7,7 +7,7 @@ import { Bot } from '../../bot';
 import { Irc } from './irc';
 import * as _ from 'lodash';
 
-export class IrcServer extends Server implements IIRCServer {
+export class IrcServer extends Server<Irc> implements IIRCServer {
 
   public channels: IrcChannel[] = [];
   public host: string;
@@ -16,7 +16,7 @@ export class IrcServer extends Server implements IIRCServer {
   public password: string;
   public location: ITLD;
 
-  private _connection_history: connection_history[] = [];
+  private _connection_history: ConnectionHistory[] = [];
 
   constructor( public network: Irc, options: IIrcServerOptions ) {
     super( network, options.host, options.port );
@@ -46,8 +46,8 @@ export class IrcServer extends Server implements IIRCServer {
   * @param <Server> server: The server that has connected
   * @return <void>
   */
-  private onConnect( network: AnyNet, server: IrcServer ): void {
-    if ( network != this.network || server != this )
+  private onConnect( network: Irc, server: IrcServer ): void {
+    if ( network !== this.network || server !== this )
       return;
 
     this._connection_history.push( { connected: Date.now(), disconnected: null } );
@@ -60,13 +60,13 @@ export class IrcServer extends Server implements IIRCServer {
   * @param <Server> server: The server that has connected
   * @return <void>
   */
-  private onDisconnect( network: AnyNet, server: IrcServer ): void {
-    if ( network != this.network || server != this )
+  private onDisconnect( network: Irc, server: IrcServer ): void {
+    if ( network !== this.network || server !== this )
       return;
 
     this.network.bot.Logger.info( `disconnected from ${ this.host } on ${ this.network.name }` );
     this._connected = false;
-    this._connection_history[ this._connection_history.length-1 ].disconnected = Date.now();
+    this._connection_history[ this._connection_history.length - 1 ].disconnected = Date.now();
   }
 
 
@@ -75,7 +75,7 @@ export class IrcServer extends Server implements IIRCServer {
   * @return <void>
   */
   public disable(): void {
-    this.network.bot.Logger.info( `disabling server ${ this.host }  on ${ this.network.name }` );
+    this.network.bot.Logger.info( `disabling server ${ this.host } on ${ this.network.name }` );
 
     this._enable = false;
 
@@ -99,11 +99,11 @@ export class IrcServer extends Server implements IIRCServer {
       ssl: false,
       password: null,
       location: null
-    }
+    };
   }
 }
 
-export interface IIRCServer extends ServerOptions, IServer {
+export interface IIRCServer extends ServerOptions, IServer<Irc> {
 
 }
 
@@ -118,7 +118,7 @@ interface ServerOptions extends IServerOptions  {
   location?: ITLD;
 }
 
-interface connection_history  {
+interface ConnectionHistory  {
   connected: number;
   disconnected: number;
 }

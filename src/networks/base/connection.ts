@@ -1,16 +1,16 @@
 'use strict';
 
-import { AnyNet } from '../netfactory';
+import { Network } from './network';
 import { Transform } from 'stream';
 import { Server } from './server';
 import { TLSSocket } from 'tls';
 import { Bot } from '../../bot';
 import { Socket } from 'net';
 
-export abstract class Connection implements IConnection {
+export abstract class Connection<N extends Network> implements IConnection<N> {
 
   public socket: Socket | TLSSocket;
-  public server: Server;
+  public server: Server<N>;
   public nick: string;
 
   protected _connected = false;
@@ -19,7 +19,7 @@ export abstract class Connection implements IConnection {
   protected buffer = new Transform();
 
 
-  constructor( public network: AnyNet ) {
+  constructor( public network: N ) {
 
   }
 
@@ -64,9 +64,9 @@ export abstract class Connection implements IConnection {
 
 }
 
-export interface IConnection extends IConnectionOptions {
-  network: AnyNet;
-  server: Server;
+export interface IConnection<N extends Network> extends IConnectionOptions {
+  network: N;
+  server: Server<N>;
   socket: Socket | TLSSocket;
 
   connect(): void;

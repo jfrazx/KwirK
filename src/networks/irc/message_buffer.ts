@@ -1,9 +1,11 @@
 'use strict';
 
 import { Constants } from '../../constants/constants';
+import { Message } from '../../messaging/Message';
 import { IrcConnection } from './irc_connection';
-import * as iconv from 'iconv-lite';
 import { Mixin } from '../../utilities/mixin';
+import * as iconv from 'iconv-lite';
+import { Irc } from './irc';
 
 export class MessageBuffer {
 
@@ -28,7 +30,7 @@ export class MessageBuffer {
   * @param <Buffer> data: The data received from the socket
   * @return <void>
   */
-  public onData( data ) {
+  public onData( data: Buffer ) {
     // from kiwiIRC
     let data_pos   = 0,               // Current position within the data Buffer
         line_start = 0,
@@ -118,7 +120,7 @@ export class MessageBuffer {
 
     let time = new Date();
 
-    console.log( '[' + time.getHours() +':' + time.getMinutes() + ':' + time.getSeconds() + '] >>', line );
+    console.log( '[' + time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds() + '] >>', line );
 
     let message: RegExpExecArray = MessageBuffer.REGEXP.exec( line.replace( /^\r+|\r+$/, '' ) );
 
@@ -143,13 +145,15 @@ export class MessageBuffer {
     }
 
     try {
-      let command = parseInt( msg_obj.command ) || msg_obj.command;
+      let command = parseInt( msg_obj.command ).toString() || msg_obj.command;
       let emission = Constants.IRC[ command ] + '::' + this.connection.network.name;
 
       if ( Constants.IRC[ command ] === undefined )
-        emission = msg_obj.command.toString().toUpperCase() + '::' + this.connection.network.name;
+        emission = `${ msg_obj.command.toString().toUpperCase() }:: ${ this.connection.network.name }`;
 
-      this.connection.network.bot.emit( emission, msg_obj );
+      let m = this.defineMessage( msg_obj );
+
+      this.connection.network.bot.emit( emission, (m ? m : msg_obj ) );
     }
     catch ( e ) {
       this.connection.network.bot.emit( 'error', {
@@ -167,8 +171,8 @@ export class MessageBuffer {
         let temps = message[ 1 ].split( ';' );
 
         for ( let i = 0; i < temps.length; i++ ) {
-            let tag = temps[ i ].split( '=' );
-            tags.push({ tag: tag[ 0 ], value: tag[ 1 ] });
+          let tag = temps[ i ].split( '=' );
+          tags.push({ tag: tag[ 0 ], value: tag[ 1 ] });
         }
     }
 
@@ -179,6 +183,68 @@ export class MessageBuffer {
     this.connection.network.bot.emit( 'error', new Error('Message buffer too large') );
     this.connection.socket.destroy();
     this.connection.network.bot.emit( `jump::${ this.connection.network.name }`, 'message buffer overflow' );
+  }
+
+  /**
+  * Construct a message to send to the message router
+  * @param <any> message: The message starting point
+  * @return <void>
+  */
+  private defineMessage( message: any ): Message<Irc> {
+    let msg: Message<Irc>,
+        match: RegExpExecArray;
+
+    message.channel = this.connection.network.channel[ message.params[ 0 ].toLowerCase() ];
+    message.user    = this.connection.network.findUser( message.nick );
+    message.target  = message.channel || message.user;
+
+    if ( !message.target ) return;
+
+    message.message = message.params[ 1 ];
+
+    // match ctcp
+    match = /^(\u0001)(.*)(\u0001)$/.exec( message.params[ 1 ] );
+
+    if ( match && message.target === message.user ) {
+      // we don't want it to match action
+      if ( !message.message.substr( 1, 6 ).match( /^ACTION$/ ) ) {
+        this.handleCTCP( message, match );
+        return;
+      }
+    }
+
+    msg = new Message<Irc>( message );
+
+    /**
+    * Did this event happen in a channel or as a private message?
+    */
+    msg.events.push( msg.target === msg.channel ? 'public' : 'private' );
+
+    if ( msg.command.match( /^NOTICE/i ))
+      msg.events.push( 'notice' );
+
+    else if ( msg.content.substr( 1, 6 ).match( /^ACTION$/ )) {
+      msg.events.push( 'action' );
+      msg.content = msg.content.slice( 7 ).trim();
+    }
+    else if ( msg.command.match( /^PRIVMSG/i ))
+      msg.events.push( 'message' );
+
+    // this shouldn't happen, but...
+    else {
+      msg.events.push( 'unknown' );
+
+      this.connection.network.bot.Logger.warn( `Unknown IRC event with command ${ msg.command } and message ${ msg.content }` );
+    }
+
+    return msg;
+  }
+
+  /**
+  * @todo handle VERSION , SOURCE and other CTCP queries
+  */
+  private handleCTCP( message: any, match: RegExpExecArray ): void {
+    console.log( 'ctcp', match );
   }
 }
 

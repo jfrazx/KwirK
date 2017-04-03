@@ -2,7 +2,7 @@
 import { Server, IServer, IServerOptions } from '../base/server';
 import { HipChat } from './hipchat';
 
-export class HipChatServer extends Server implements IHipChatServer {
+export class HipChatServer extends Server<HipChat> implements IHipChatServer {
 
   constructor( public network: HipChat, options: IHipChatServerOptions ) {
     super( network, options.host, null );
@@ -18,7 +18,7 @@ export class HipChatServer extends Server implements IHipChatServer {
 
 }
 
-interface IHipChatServer extends IServer, IHipChatServerOptions {
+interface IHipChatServer extends IServer<HipChat>, IHipChatServerOptions {
 
 }
 

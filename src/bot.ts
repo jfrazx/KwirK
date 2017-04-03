@@ -6,44 +6,48 @@ import { EventEmitter } from './utilities/events';
 import { Server } from './networks/base/server';
 import { Logger } from './utilities/logger';
 import { Router } from './messaging/router';
-import { Timer } from './utilities/timer';
-var Color = require( './utilities/color' );
-import * as _ from 'lodash';
+import { TimerJobs } from 'timerjobs/src/timerjobs';
+import * as Promise from 'bluebird';
+const Color = require( './utilities/color' );
+import * as _ from './utilities/lodash';
 
 Color.global();
 
 export class Bot extends EventEmitter implements IBot {
 
-    public network: { [ network: string ]: AnyNet } = {};
-    public timers: { [ network: string ]: Timer[] } = {};
+    public network: { [ network: string ]: AnyNet } = Object.create(null);
+    public timers: { [ network: string ]: TimerJobs[] } = Object.create(null);
     public Logger = Logger;
     public router: Router;
-    public Timer = Timer;
+    public Timer = TimerJobs;
     public Color = Color;
+    public Promise = Promise;
 
     private static _instance: Bot;
 
     constructor() {
       super();
 
-      if ( Bot._instance ) {
-        return Bot._instance
+      if (Bot._instance) {
+        return Bot._instance;
       }
 
       Bot._instance = this;
 
-      this.setMaxListeners( 0 );
+      this.setMaxListeners(0);
+      this.Timer.emitter = this;
 
       // for now, eventually we will daemonize2
-      process.on( 'SIGINT',  () => {
-        this.quit( () => {
-          process.exit( 0 );
+      process.on('SIGINT',  () => {
+        this.Logger.info(`Qutting all networks`);
+        this.quit(() => {
+          process.exit(0);
         });
       });
 
       this.setupListeners();
 
-      this.router = new Router( this );
+      this.router = new Router(this);
     }
 
     /**
@@ -66,15 +70,16 @@ export class Bot extends EventEmitter implements IBot {
       }
 
       // no networks?
-      if ( !( _.keys( this.network ).length )) {
-        this.emit( 'error', new Error( 'no networks available' ) );
+      if (!(_.keys(this.network).length)) {
+        this.emit('error', new Error('no networks available'));
         return;
       }
 
-      for ( let name in this.network ) {
-        if ( !this.network[ name ].enabled() || this.network[ name ].connected() )
+      for (const name in this.network) {
+        if ( !this.network[name].enabled() || this.network[name].connected()) {
           continue;
-        this.network[ name ].connect();
+        }
+        this.network[name].connect();
       }
     }
 
@@ -89,32 +94,25 @@ export class Bot extends EventEmitter implements IBot {
     public addNetwork( nets: AnyNet, callback?: Function ): Bot;
     public addNetwork( netinfo: IAnyNet, callback?: Function ): Bot;
     public addNetwork( netinfo: any, callback?: Function ): Bot {
-      var network: AnyNet;
-      if ( netinfo instanceof Network )
-        network = netinfo;
-      else
+      let network: AnyNet;
+      if (netinfo instanceof Network) {
+        network = <AnyNet>netinfo;
+      } else {
         network = NetFactory.createNetwork( this, netinfo );
-
-      // if ( !(network instanceof Network) )
-      //   network = <AnyNet>NetFactory.createNetwork( this, network );
-
-
-      if ( this.networkExists( network.name ) ) {
-        let err = new Error( `network ${ network.name } already exists` );
-
-        this.emit( 'error', err );
-
-        if ( callback )
-          callback( err, network );
-        else
-          throw err;
       }
-      else {
+
+      if (this.networkExists(network.name)) {
+        const err = new Error(`network ${ network.name } already exists`);
+
+        this.emit('error', err);
+
+        callback && callback(err, network);
+      } else {
         this.network[ network.name ] = network;
 
-        if ( callback )
-          callback( null, network );
+        callback && callback(null, network);
       }
+
       return this;
     }
 
@@ -123,9 +121,9 @@ export class Bot extends EventEmitter implements IBot {
     * @param <string> name: The name of the network to find
     * @return <AnyNet>
     */
-    public getNetwork( name: string ): AnyNet {
-      return _.find( this.network , ( netname: string, network: AnyNet ) => {
-        return netname == name;
+    public getNetwork(name: string): AnyNet {
+      return _.find(this.network , (netname: string) => {
+        return netname === name;
       });
     }
 
@@ -135,28 +133,25 @@ export class Bot extends EventEmitter implements IBot {
     * @return <Bot>
     */
     public removeNetwork( network: AnyNet, callback?: Function ): Bot {
-      if ( this.networkExists( network.name ) ) {
-        this.emit( 'removing network', network.name );
-        this.Logger.info( 'Removing network ' + network.name );
+      if (this.networkExists(network.name)) {
+        this.emit('removing network', network.name);
+        this.Logger.info('Removing network ' + network.name);
 
-        this.clearTimers( network.name );
+        this.clearTimers(network.name);
 
-        if ( network.connected() ) {
-          this.network[ network.name ].disconnect( ( err?: Error )=> {
+        if (network.connected()) {
+          this.network[network.name].disconnect((err?: Error) => {
             delete this.network[ network.name ];
 
-            if ( err )
-              this.emit('error', err, 'removeNetwork' );
-
-            if ( callback )
-              callback( err );
+            if (err) {
+              this.emit('error', err, 'removeNetwork');
+            }
+            callback && callback(err);
           });
-        } else { delete this.network[ network.name ]; }
-
+        } else { delete this.network[network.name]; }
       }
 
-      if ( callback )
-        callback( null );
+      callback && callback(null);
 
       return this;
     }
@@ -185,9 +180,9 @@ export class Bot extends EventEmitter implements IBot {
         }
       }
       else {
-        _.each( _.keys( this.network ), ( network ) => {
-          this.network[ network ].clearTimers();
-        } );
+        for (const network in this.network) {
+          this.network[network].clearTimers();
+        }
       }
 
       return this;
@@ -250,7 +245,7 @@ export class Bot extends EventEmitter implements IBot {
     * @return <void>
     * @private
     */
-    private onConnect( network: AnyNet, server: Server ): void {
+    private onConnect( network: AnyNet, server: Server<AnyNet> ): void {
       this.Logger.info( `connected to nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
     }
 
@@ -261,7 +256,7 @@ export class Bot extends EventEmitter implements IBot {
     * @return <void>
     * @private
     */
-    private onDisconnect( network: AnyNet, server: Server ): void {
+    private onDisconnect( network: AnyNet, server: Server<AnyNet> ): void {
       this.Logger.info( `disconnected from nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
     }
 
@@ -272,7 +267,9 @@ export class Bot extends EventEmitter implements IBot {
     * @private
     */
     private onError( e: Error ): void {
-      this.Logger.error( e.toString() );
+      this.Logger.error( e.name );
+      this.Logger.error( e.message );
+      this.Logger.error( e.stack );
     }
 
     /**
@@ -282,13 +279,13 @@ export class Bot extends EventEmitter implements IBot {
     * @return <void>
     * @private
     */
-    private onRegistered( network: AnyNet, server: Server ): void {
+    private onRegistered( network: AnyNet, server: Server<AnyNet> ): void {
       this.Logger.info( `registered network ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
     }
 
     public static bot(): Bot {
       if ( this._instance )
-        return this._instance
+        return this._instance;
       return new Bot();
     }
   }

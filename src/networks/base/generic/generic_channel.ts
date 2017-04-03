@@ -6,7 +6,7 @@
 import { Channel, IChannelOptions, IChannel } from '../channel';
 import { Generic } from './generic_network';
 
-export class GenericChannel extends Channel implements IGenericChannel {
+export class GenericChannel extends Channel<Generic> implements IGenericChannel {
 
   constructor( public network: Generic, options: IGenericChannelOptions ) {
     super( network, options );
@@ -23,7 +23,7 @@ export class GenericChannel extends Channel implements IGenericChannel {
   public send(): void {}
 }
 
-interface IGenericChannel extends IChannel, IGenericChannelOptions {
+interface IGenericChannel extends IChannel<Generic>, IGenericChannelOptions {
 
 }
 

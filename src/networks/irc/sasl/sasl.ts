@@ -1,5 +1,6 @@
 // TODO: everything
-export class SASL {
+
+export module Sasl {
 
 }
 

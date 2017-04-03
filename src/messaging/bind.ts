@@ -1,4 +1,6 @@
 
+import { Network } from '../networks/base/network';
+import { AnyNet } from '../networks/netfactory';
 import { Message } from './message';
 import { Bot } from '../bot';
 import * as _ from 'lodash';
@@ -30,7 +32,7 @@ export class Bind implements IBind {
 
     this.validate( opts );
 
-    this.active = opts.active === undefined ? true : !!opts.active;
+    this.active = opts.active === undefined ? true : Boolean(opts.active);
 
     if ( !Bind.binds[ opts.source_network ] )
       Bind.binds[ opts.source_network ] = {
@@ -39,8 +41,8 @@ export class Bind implements IBind {
       };
 
     // if a binding already exists, remove it
-    if ( Bind.bindExists( opts.source_network, opts.source_channel, opts.target_network, opts.target_channel ) ) {
-      Bind.removeBind( Bind.findBind( opts.source_network, opts.source_channel, opts.target_network, opts.target_channel ));
+    if ( Bind.exists( opts.source_network, opts.source_channel, opts.target_network, opts.target_channel ) ) {
+      Bind.removeBind( Bind.find( opts.source_network, opts.source_channel, opts.target_network, opts.target_channel ));
     }
 
     this.network       = opts.source_network;
@@ -48,9 +50,9 @@ export class Bind implements IBind {
     this.destination   = opts.target_network;
     this.target        = opts.target_channel;
 
-    this.duplex        = opts.duplex === undefined ? true : !!opts.duplex;
-    this.unrestricted  = opts.unrestricted === undefined ? true : !!opts.unrestricted;
-    this.prefix_source = opts.prefix_source === undefined ? false : !!opts.prefix_source;
+    this.duplex        = opts.duplex === undefined ? true : Boolean(opts.duplex);
+    this.unrestricted  = opts.unrestricted === undefined ? true : Boolean(opts.unrestricted);
+    this.prefix_source = opts.prefix_source === undefined ? false : Boolean(opts.prefix_source);
     this.prefix        = opts.prefix || this.prefix || '';
 
 
@@ -59,7 +61,7 @@ export class Bind implements IBind {
     Bind.binds[ this.network ].binds.push( this );
 
     // create the opposing bind if it does not exist
-    if ( this.duplex && !Bind.bindExists( this.destination, this.target, this.network, this.channel ) ) {
+    if ( this.duplex && !Bind.exists( this.destination, this.target, this.network, this.channel ) ) {
       this.createOpposing( inherit );
     }
   }
@@ -71,7 +73,7 @@ export class Bind implements IBind {
   */
   public opposing( inherit: boolean = false ): Bind {
     let bind: Bind;
-    if ( !( bind = Bind.findBind( this.destination, this.target, this.network, this.channel ) ))
+    if ( !( bind = Bind.find( this.destination, this.target, this.network, this.channel ) ))
         bind = this.createOpposing( inherit );
 
     return bind;
@@ -83,7 +85,7 @@ export class Bind implements IBind {
   * @return <Bind>
   */
   public accept( callback: Function ): Bind {
-    if ( typeof callback != 'function' )
+    if ( typeof callback !== 'function' )
       throw new Error( 'You must pass a function to accept' );
 
     this.accepts.push( callback );
@@ -97,7 +99,7 @@ export class Bind implements IBind {
   * @return <Bind>
   */
   public reject( callback: Function ): Bind {
-    if ( typeof callback != 'function' )
+    if ( typeof callback !== 'function' )
       throw new Error( 'You must pass a function to reject' );
 
     this.rejects.push( callback );
@@ -111,7 +113,7 @@ export class Bind implements IBind {
   * @return <Bind>
   */
   public map( callback: Function ): Bind {
-    if ( typeof callback != 'function' )
+    if ( typeof callback !== 'function' )
       throw new Error( 'You must pass a function to map' );
 
     this.maps.push( callback );
@@ -125,29 +127,27 @@ export class Bind implements IBind {
   * @return <Message>
   * @todo return a response object
   */
-  public match( message: Message ): Message {
+  public match<N extends Network>( message: Message<N> ): Message<N> {
     let matched: any;
     try {
-      if ( matched = _.any( this.rejects, ( callback ) => {
+      if ( matched = _.some( this.rejects, ( callback ) => {
         return callback.call( null, message );
       })) {
         return undefined;
       }
 
-      matched = _.any( this.accepts, ( callback ) => {
+      matched = _.some( this.accepts, ( callback ) => {
         return callback.call( null, message );
       });
     }
     catch ( e ) {
       this.bot.Logger.error( `Bind matching error for ${ this.network }:${ this.channel } <=> ${ this.destination }:${ this.target } : ${ e }` );
 
-      return undefined;
+      return;
     }
 
     if ( matched || ( !this.rejects.length && !this.accepts.length ) || this.unrestricted )
       return this.transform( message );
-
-    return undefined;
   }
 
   /**
@@ -221,7 +221,7 @@ export class Bind implements IBind {
   * @return <Bind>
   */
   private createOpposing( inherit: boolean = false ): Bind {
-    let bind = new Bind( this.bot, {
+    const bind = new Bind( this.bot, {
       source_network: this.destination,
       source_channel: this.target,
       target_network: this.network,
@@ -238,9 +238,9 @@ export class Bind implements IBind {
     });
 
     if ( inherit ) {
-      bind.accepts = this.accepts;
-      bind.rejects = this.rejects;
-      bind.maps = this.maps;
+      bind.accepts = Object.assign([], this.accepts);
+      bind.rejects = Object.assign([], this.rejects);
+      bind.maps    = Object.assign([], this.maps);
     }
 
     return bind;
@@ -251,10 +251,10 @@ export class Bind implements IBind {
   * @param <Message> message: The message to transform
   * @return <Message>
   */
-  private transform( message: Message ): Message {
-    var msg = Object.create( Object.getPrototypeOf( message ));
+  private transform<N extends Network>( message: Message<N> ): Message<N> {
+    let msg = Object.create( Object.getPrototypeOf( message ));
 
-    _.merge( msg, message );
+    Object.assign(msg, message);
 
     _.each( this.maps, ( callback ) => {
       callback.call( null, msg );
@@ -263,20 +263,23 @@ export class Bind implements IBind {
     return msg;
   }
 
-  private validate( opts ): void {
+  private validate( opts: BindOptions ): void {
     [ 'source_network',
       'source_channel',
       'target_network',
       'target_channel'
-    ].forEach( ( prop ) => {
-      if ( !opts[ prop ] || !opts[ prop ].trim() )
-        throw new Error( `a ${ prop.replace( /_/, ' ' ) } must be defined for binding` );
+    ].forEach(prop => {
+      if (!opts[prop] || !(<string>opts[prop]).trim()) {
+        throw new Error(`a ${ prop.replace(/_/, ' ') } must be defined for binding`);
+      }
     });
 
-    if ( opts.source_network === opts.target_network && opts.source_channel === opts.target_channel )
+    if ( opts.source_network === opts.target_network && opts.source_channel === opts.target_channel ) {
       throw new Error( 'the target must not be the source' );
+    }
   }
 
+  // TODO
   private setupListeners() {
     if ( this.listen_part ) {
 
@@ -296,8 +299,8 @@ export class Bind implements IBind {
   * @return <boolean>
   * @static
   */
-  public static bindExists( network: string, channel: string, destination: string, target: string ): boolean {
-    return !!this.findBind( network, channel, destination, target );
+  public static exists( network: string, channel: string, destination: string, target: string ): boolean {
+    return !!this.find( network, channel, destination, target );
   }
 
   /**
@@ -309,21 +312,19 @@ export class Bind implements IBind {
   * @return <Bind>
   * @static
   */
-  public static findBind( network: string, channel: string, destination: string, target: string ): Bind {
+  public static find( network: string, channel: string, destination: string, target: string ): Bind {
     if ( this.binds[ network ] ) {
-      let bindings = this.binds[ network ].binds;
+      const bindings = this.binds[ network ].binds;
 
-      for ( let bind in bindings ) {
-        if ( bindings[ bind ].channel === channel ) {
-          if ( bindings[ bind ].destination === destination ) {
-            if ( bindings[ bind ].target === target )
-              return bindings[ bind ];
+      for ( const bound of bindings ) {
+        if ( bound.channel === channel ) {
+          if ( bound.destination === destination ) {
+            if ( bound.target === target )
+              return bound;
           }
         }
       }
     }
-
-    return undefined;
   }
 
   /**
@@ -343,11 +344,15 @@ export class Bind implements IBind {
     if ( network instanceof Bind ) {
       network.bot.Logger.info( `Removing binding for ${ network.network }:${ network.channel } <=> ${ network.destination }:${ network.target }` );
 
-      return this.binds[ network.network ].binds.splice( network, 1 ).pop();
+      return this.binds[ network.network ]
+                 .binds
+                 .splice(
+                   this.binds[ network.network ].binds.indexOf(network),
+                   1
+                  ).pop();
     }
-    else {
-      return this.removeBind( this.findBind( network, channel, destination, target ));
-    }
+
+    return this.removeBind( this.find( network, channel, destination, target ));
   }
 }
 
@@ -358,7 +363,7 @@ interface IBind extends Options {
   destination: string;
   target: string;
 
-  match( message: Message ): Message;
+  match( message: Message<AnyNet> ): Message<AnyNet>;
 
   opposing( create?: boolean ): Bind;
 
@@ -375,29 +380,30 @@ interface IBind extends Options {
 }
 
 export interface BindOptions extends IBindOptions {
-  source_network: string
+  [key: string]: any;
+  source_network: string;
 }
 
-export interface IBindOptions  extends Options {
-  source_channel: string,
-  target_network: string,
-  target_channel: string,
-  listen_join?: boolean,
-  listen_part?: boolean,
+export interface IBindOptions extends Options {
+  source_channel: string;
+  target_network: string;
+  target_channel: string;
+  listen_join?: boolean;
+  listen_part?: boolean;
 }
 
 interface Options {
-  active?: boolean,
-  duplex?: boolean,
-  unrestricted?: boolean,
+  active?: boolean;
+  duplex?: boolean;
+  unrestricted?: boolean;
 
-  prefix_source?: boolean,
-  prefix?: string,
+  prefix_source?: boolean;
+  prefix?: string;
 }
 
 export interface IBinds {
-  [ network: string ]: {
+  [network: string]: {
       binds: Bind[],
       enable: boolean
-  }
+  };
 }

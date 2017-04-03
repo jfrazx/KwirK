@@ -1,11 +1,13 @@
 
+import { Network } from '../networks/base/network';
+import { AnyNet } from '../networks/netfactory';
 import { Bot } from '../bot';
 import { Bind } from './bind';
 import { Message } from './message';
 
 export class Router {
 
-  public buffer: Message[];
+  public buffer: Message<AnyNet>[];
 
   constructor( public bot: Bot ) {
 
@@ -16,7 +18,7 @@ export class Router {
   * @param <Message> message: The message to route
   * @return <void>
   */
-  public route( message: Message ): void {
+  public route<N extends Network>( message: Message<N> ): void {
     this.bot.Logger.info( `Received message from ${ message.network.name } ${ message.channel ? 'channel ' + message.channel.name : 'user ' + message.user.name }` );
     this.bot.emit( `message::${ message.network.name }`, message );
 
@@ -31,7 +33,7 @@ export class Router {
   * @return <void>
   * @private
   */
-  private bindings( message: Message ): void {
+  private bindings<N extends Network>( message: Message<N> ): void {
     /**
     * In the event the message is from an individual, we don't bind user messages
     */
@@ -64,7 +66,7 @@ export class Router {
           if ( message.channel.name === bind.channel ) {
 
             let joinPart = !!message.command.match( /^JOIN|PART$/i );
-            let msg: Message = null;
+            let msg: Message<N> = null;
             /**
             * Let the bind determine if the message is a match
             */

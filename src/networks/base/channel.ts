@@ -3,11 +3,12 @@ import { AnyNet, IAnyNet } from '../netfactory';
 import { Target, ITarget } from './target';
 import { Network } from './network';
 import { User } from './user';
-import * as _ from 'lodash';
+import * as _ from '../../utilities/lodash';
+
 
 export abstract class Channel<N extends Network> extends Target implements IChannel<N> {
 
-  public users: User[] = [];
+  public users: User<N>[] = [];
 
   protected _in_channel: boolean = false;
 
@@ -30,7 +31,7 @@ export abstract class Channel<N extends Network> extends Target implements IChan
     return this._in_channel;
   }
 
-  public removeUser<T extends User>( nick: T ): void;
+  public removeUser( nick: User<N> ): void;
   public removeUser( nick: string ): void;
   public removeUser( nick: any ): void {
     let instance = nick instanceof User;

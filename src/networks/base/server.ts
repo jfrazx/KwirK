@@ -3,12 +3,12 @@
 import { Network } from './network';
 import { Bot } from '../../bot';
 
-export abstract class Server implements IServer {
+export abstract class Server<N extends Network> implements IServer<N> {
 
   protected _connected = false;
   protected _enable    = true;
 
-  constructor( public network: Network, public host: string, public port: number ) {
+  constructor( public network: N, public host: string, public port: number ) {
 
     this.network.bot.Logger.info( `Creating new server on ${ this.network.name } using ${ this.host }` );
   }
@@ -64,8 +64,8 @@ export abstract class Server implements IServer {
   public abstract dispose(): void;
 }
 
-export interface IServer extends IServerOptions {
-  network: Network;
+export interface IServer<N> extends IServerOptions {
+  network: N;
 
   connected(): boolean;
   disable(): void;

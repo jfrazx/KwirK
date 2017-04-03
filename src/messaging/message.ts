@@ -1,14 +1,14 @@
 
 import { Channel } from '../networks/base/channel';
-import { AnyNet } from '../networks/netfactory';
+import { Network } from '../networks/base/network';
 import { User } from '../networks/base/user';
 import { Bind } from './bind';
 
-export class Message implements IMessage {
-  public network: AnyNet;
-  public channel: Channel;
-  public user: User;
-  public target: Channel | User;
+export class Message<N extends Network> implements IMessage<N> {
+  public network: N;
+  public channel: Channel<N>;
+  public user: User<N>;
+  public target: Channel<N> | User<N>;
   public nick: string;
 
   public content: string;
@@ -17,11 +17,11 @@ export class Message implements IMessage {
   public timestamp: number;
 
   public bind: Bind;
-  public original: IMessageOptions;
+  public original: IMessageOptions<N>;
   public response: string;
   public command: string;
 
-  constructor( message: IMessageOptions ) {
+  constructor( message: IMessageOptions<N> ) {
     this.network = message.network;
     this.channel = message.channel;
     this.user    = message.user;
@@ -132,11 +132,11 @@ export class Message implements IMessage {
   }
 }
 
-interface IMessage extends MessageOptions {
+interface IMessage<N extends Network> extends MessageOptions<N> {
   bind: Bind;
   content: string;
   events: string[];
-  original: IMessageOptions;
+  original: IMessageOptions<N>;
   response: string;
   timestamp: number;
   type: string;
@@ -150,15 +150,15 @@ interface IMessage extends MessageOptions {
   public(): boolean;
 }
 
-export interface IMessageOptions extends MessageOptions {
+export interface IMessageOptions<N extends Network> extends MessageOptions<N> {
   message?: string;
 }
 
-interface MessageOptions {
-  network: AnyNet;
-  channel: Channel;
-  user: User;
-  target?: Channel | User;
+interface MessageOptions<N extends Network> {
+  network: N;
+  channel: Channel<N>;
+  user: User<N>;
+  target?: Channel<N> | User<N>;
   nick: string;
   command: string;
 }

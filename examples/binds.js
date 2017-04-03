@@ -3,10 +3,10 @@
 */
 
 // for now, npm package eventually
-var Kwirk = require('../index'),
+const Kwirk = require('../index'),
     bot   = new Kwirk.Bot();
 
-var freenode = {
+const freenode = {
   type: 'irc',
   name: 'freenode',
   nick: 'kwirk',
@@ -35,7 +35,7 @@ var freenode = {
   }]
 };
 
-var efnet = {
+const efnet = {
   type: 'irc',
   name: 'efnet',
   servers: [
@@ -54,7 +54,7 @@ var efnet = {
   nick: 'KwirKBot'
 };
 
-var undernet = {
+const undernet = {
   type: 'irc',
   name: 'undernet',
   servers: [{

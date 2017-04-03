@@ -32,31 +32,58 @@
  import { Router } from './src/messaging/router';
  import { Bind } from './src/messaging/bind';
 
+ import { EventEmitter } from './src/utilities/events';
  import { Logger } from './src/utilities/logger';
  import { Timer } from './src/utilities/timer';
+ import { Mixin } from './src/utilities/mixin';
  import * as Hook from './src/utilities/hook';
 
 
- module.exports = {
-   Bot,
-   Channel,
-   Connection,
-   HipChat,
-   Hook,
+module.exports = {
+  Bot,
 
-   Bind,
+  // BASE
+  Connection,
+  Channel,
+  Network,
+  Server,
+  User,
 
-   Irc,
-   IrcChannel,
-   IrcConnection,
-   IrcServer,
-   IrcUser,
+  NetFactory,
 
-   Logger,
-   NetFactory,
-   Network,
-   Server,
-   Slack,
-   Timer,
-   User
- };
+  // HIPCHAT
+  HipChatConnection,
+  HipChatChannel,
+  HipChatServer,
+  HipChatUser,
+  HipChat,
+
+  // GITTER
+
+  //  IRC
+  IrcConnection,
+  IrcChannel,
+  IrcServer,
+  IrcUser,
+  Irc,
+
+  // SLACK
+  SlackConnection,
+  SlackChannel,
+  SlackServer,
+  SlackUser,
+  Slack,
+
+  // MESSAGING
+  Listener,
+  Message,
+  Router,
+  Bind,
+
+  // UTILITIES
+  EventEmitter,
+  Logger,
+  Timer,
+  Mixin,
+  Hook,
+};

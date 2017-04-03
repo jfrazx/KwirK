@@ -13,7 +13,7 @@ module Hook {
   export var hooks: { [ event: string ]: { [ which: string ]: IHook[] } } = {};
   export var emitter = new EventEmitter();
 
-  var job: { is_busy: boolean, events: string[] } = { is_busy: false, events: [] };
+  var job: Job = { is_busy: false, events: [] };
 
   export function registerPre( event: string, hook: IHook ): boolean {
     return register( event, hook, true );
@@ -24,7 +24,7 @@ module Hook {
   }
 
   export function register( event: string, hook: IHook, pre: boolean ): boolean {
-    let which = pre ? 'pre' : 'post';
+    const which = pre ? 'pre' : 'post';
 
     if ( !hook.reference || !hook.reference.trim().length )
       return false; // fail in this fashion ?
@@ -47,7 +47,7 @@ module Hook {
     if ( !hooks[ event ] || !hooks[ event ][ which ] )
       return false;
 
-    return !!_.find( hooks[ event ][ which ], ( hook: IHook )=>{
+    return !!_.find( hooks[ event ][ which ], ( hook: IHook ) => {
       return hook.reference === reference;
     });
   }
@@ -96,7 +96,7 @@ module Hook {
   }
 
   function isBusy( ...args: any[] ): boolean {
-    if ( job.is_busy && _.include( job.events, args[ 0 ] ) ) {
+    if ( job.is_busy && _.includes( job.events, args[ 0 ] ) ) {
       setTimeout( isBusy.caller.apply( Hook, args ), 1000 );
       return true;
     }
@@ -169,7 +169,7 @@ module Hook {
     }
 
     /**
-    * Mark Hooks an not being busy and remove the no longer busy event
+    * Mark Hooks as not being busy and remove the no longer busy event
     *
     * @param <String> event: The no longer buys event
     * @return <void>
@@ -179,6 +179,11 @@ module Hook {
 
       job.events = _.difference( job.events, [ event ] );
     }
+  }
+
+  export interface Job {
+    is_busy: boolean,
+    events: string[]
   }
 
   export interface IHook {

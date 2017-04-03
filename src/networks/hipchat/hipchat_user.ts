@@ -2,7 +2,7 @@
 import { User, IUser, IUserOptions } from '../base/user';
 import { HipChat } from './hipchat';
 
-export class HipChatUser extends User implements IHipChatUser {
+export class HipChatUser extends User<HipChat> implements IHipChatUser {
 
   constructor( network: HipChat, options: IHipChatUserOptions ) {
     super( network, options );
@@ -31,7 +31,7 @@ export class HipChatUser extends User implements IHipChatUser {
 
 }
 
-interface IHipChatUser extends IHipChatUserOptions, IUser {
+interface IHipChatUser extends IHipChatUserOptions, IUser<HipChat> {
 
 }
 

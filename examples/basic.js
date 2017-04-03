@@ -3,7 +3,7 @@
 * An example of a very basic IRC bot
 */
 
-var Kwirk = require('../index')
+const Kwirk = require('../index')
   , bot   = new Kwirk.Bot();
 
 bot.addNetwork({

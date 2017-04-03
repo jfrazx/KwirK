@@ -103,16 +103,16 @@ export class Timer implements ITimer {
     // keep track of original so we can reassign if the timer gets restarted
     this._countdown = this.countdown;
 
-    var that = this;
+    const self = this;
 
     // do we want the timer to listen for and stop on a particular event?
     if ( this.stopOn ) {
       this.network.bot.on( this.stopOn, function() {
-        that.stop();
+        self.stop();
 
-          // callback to perform if the stop on event fires
-          if ( that.stopCallback )
-            that.stopCallback();
+        // callback to perform if the stop on event fires
+        if ( self.stopCallback )
+          self.stopCallback();
       });
     }
 
@@ -123,11 +123,11 @@ export class Timer implements ITimer {
     */
     if ( this.startOn ) {
       this.network.bot.on( this.startOn, function() {
-        if ( that.stopped() ) {
-          that.start();
+        if ( self.stopped() ) {
+          self.start();
 
-          if ( that.startCallback )
-            that.startCallback();
+          if ( self.startCallback )
+            self.startCallback();
         }
       });
     }
@@ -138,11 +138,11 @@ export class Timer implements ITimer {
     */
     if ( this.restartOn ) {
       this.network.bot.on( this.restartOn, function() {
-        if ( that.stopped() ) {
-          that.start();
+        if ( self.stopped() ) {
+          self.start();
 
-          if ( that.restartCallback )
-            that.restartCallback();
+          if ( self.restartCallback )
+            self.restartCallback();
         }
       });
     }
@@ -162,7 +162,7 @@ export class Timer implements ITimer {
       if ( this.countdown < 1 )
         this.countdown = this._countdown;
 
-      this.timer = setInterval( this.go.bind( this ), this.interval );
+      this.timer = <NodeJS.Timer><any>setInterval( this.go.bind( this ), this.interval );
 
       this.network.bot.emit( 'jobstart' + this.LEVEL[ this.emitLevel ] );
 
@@ -192,7 +192,7 @@ export class Timer implements ITimer {
   * Is the timer started?
   * @return <boolean>
   */
-  public started() : boolean {
+  public started(): boolean {
     return !( !this.timer );
   }
 
@@ -307,5 +307,5 @@ export interface ITimerOptions {
     startOn?: string;
     startCallback?: Function;
     restartOn?: string;
-    retartCallback?: string;
+    retartCallback?: Function;
 }
