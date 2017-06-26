@@ -60,7 +60,7 @@ module.exports = {
 
   // GITTER
 
-  //  IRC
+  // IRC
   IrcConnection,
   IrcChannel,
   IrcServer,

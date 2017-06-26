@@ -6,7 +6,7 @@ import { Bot } from '../../bot';
 
 // this should be more generic
 
-export module Helpers {
+export namespace Helpers {
 
   export function Channel( channel: IrcChannel, network?: string ): IrcChannel;
   export function Channel( channel: string, network?: string ): IrcChannel;

@@ -9,6 +9,7 @@ src/**/*.d.ts
 !test/**/*
 !examples/**/*
 !typings/**/*
+dist/
 
 node_modules/
 

@@ -1,5 +1,5 @@
 
-export module Mixin {
+export namespace Mixin {
   export function mix(derived: any, ...mixable: any[]): any {
     const proto = derived.prototype || derived;
     mixable.forEach(base => {

@@ -48,6 +48,6 @@ export interface IHipChatOptions extends HipChatOptions, INetOptions {
 
 }
 
-interface HipChatOptions extends INetworkOptions {
+export interface HipChatOptions extends INetworkOptions {
 
 }

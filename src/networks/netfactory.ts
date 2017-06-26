@@ -3,30 +3,46 @@ import { HipChat, IHipChatOptions } from './hipchat/hipchat';
 import { Slack, ISlackOptions } from './slack/slack';
 import { Irc, IIrcOptions } from './irc/irc';
 import { Network, INetwork, INetworkOptions } from './base/network';
+import { Hook } from '../utilities/hooks';
 import { Bot } from './../bot';
 
 export namespace NetFactory {
-  export function createNetwork<O extends INetworkOptions>( bot: Bot, options: O  ): AnyNet {
 
-    switch ( options.type ) {
+  /**
+   * Create a network instance of the given type
+   *
+   * @export
+   * @template O
+   * @param {Bot} bot
+   * @param {O} options
+   * @returns {AnyNet}
+   */
+  export function createNetwork<O extends INetworkOptions>(bot: Bot, options: O): AnyNet {
+    let network: AnyNet;
+
+    switch (options.type) {
       // case 'gitter':
-        // return new Gitter( bot, options );
+        // network = new Gitter( bot, options );
 
       case 'hipchat':
-        return new HipChat( bot, options );
-
+        network = new HipChat(bot, options);
+        break;
       case 'irc':
-        return new Irc( bot, options );
-
+        network = new Irc(bot, options);
+        break;
       case 'slack':
-        return new Slack( bot, options );
-
+        network = new Slack(bot, options);
+        break;
       default:
-        throw new Error( `${ options.type } is not a known network type` );
+        throw new Error(`${ options.type } is not a known network type`);
     }
+
+    return new Proxy(network, new Hook<AnyNet>());
+    // return network;
   }
 }
 
 export type IAnyNet = IIrcOptions | ISlackOptions | IHipChatOptions;
-// export type AnyNet = ?? extends Network;
+// export type AnyNet = typeof Network;
+// export type AnyNet = "ANYTHING THAT EXTENDS NETWORK"
 export type AnyNet = Irc | Slack | HipChat;

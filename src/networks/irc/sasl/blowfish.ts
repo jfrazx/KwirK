@@ -1,4 +1,4 @@
-export module Sasl {
+export namespace Sasl {
   export class BlowFish {
 
 

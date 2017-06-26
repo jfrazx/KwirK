@@ -32,13 +32,14 @@ export class Bind implements IBind {
 
     this.validate( opts );
 
-    this.active = opts.active === undefined ? true : Boolean(opts.active);
+    this.active = opts.active === void 0 ? true : Boolean(opts.active);
 
-    if ( !Bind.binds[ opts.source_network ] )
+    if ( !Bind.binds[ opts.source_network ] ) {
       Bind.binds[ opts.source_network ] = {
         binds: [],
         enable: this.active
       };
+    }
 
     // if a binding already exists, remove it
     if ( Bind.exists( opts.source_network, opts.source_channel, opts.target_network, opts.target_channel ) ) {
@@ -50,9 +51,9 @@ export class Bind implements IBind {
     this.destination   = opts.target_network;
     this.target        = opts.target_channel;
 
-    this.duplex        = opts.duplex === undefined ? true : Boolean(opts.duplex);
-    this.unrestricted  = opts.unrestricted === undefined ? true : Boolean(opts.unrestricted);
-    this.prefix_source = opts.prefix_source === undefined ? false : Boolean(opts.prefix_source);
+    this.duplex        = opts.duplex === void 0 ? true : Boolean(opts.duplex);
+    this.unrestricted  = opts.unrestricted === void 0 ? true : Boolean(opts.unrestricted);
+    this.prefix_source = opts.prefix_source === void 0 ? false : Boolean(opts.prefix_source);
     this.prefix        = opts.prefix || this.prefix || '';
 
 
@@ -290,40 +291,54 @@ export class Bind implements IBind {
     }
   }
 
+
   /**
-  * Determine if the binding exists
-  * @param <string> network: The source network name
-  * @param <string> channel: The source channel name
-  * @param <string> destination: The target network name
-  * @param <string> target: The target networks channel name
-  * @return <boolean>
-  * @static
-  */
+   * Determine if a bind matching the passed arguments currently exists
+   *
+   * @static
+   * @param {string} network
+   * @param {string} channel
+   * @param {string} destination
+   * @param {string} target
+   * @returns {boolean}
+   * @memberof Bind
+   */
   public static exists( network: string, channel: string, destination: string, target: string ): boolean {
-    return !!this.find( network, channel, destination, target );
+    return Boolean(this.find( network, channel, destination, target ));
+  }
+
+
+  /**
+   * Determine if the passed bind has a matching opposite bind
+   *
+   * @static
+   * @param {Bind} bind
+   * @returns {boolean}
+   * @memberof Bind
+   */
+  public static oppositeExists(bind: Bind): boolean {
+    return this.exists(bind.destination, bind.target, bind.network, bind.channel);
   }
 
   /**
-  * Find the bind from the given parameters
-  * @param <string> network: The source network name
-  * @param <string> channel: The source channel name
-  * @param <string> destination: The target network name
-  * @param <string> target: The target networks channel name
-  * @return <Bind>
-  * @static
-  */
+   * Find the bind from the given parameters
+   *
+   * @static
+   * @param {string} network
+   * @param {string} channel
+   * @param {string} destination
+   * @param {string} target
+   * @returns {Bind}
+   * @memberof Bind
+   */
   public static find( network: string, channel: string, destination: string, target: string ): Bind {
-    if ( this.binds[ network ] ) {
-      const bindings = this.binds[ network ].binds;
-
-      for ( const bound of bindings ) {
-        if ( bound.channel === channel ) {
-          if ( bound.destination === destination ) {
-            if ( bound.target === target )
-              return bound;
-          }
-        }
-      }
+    if (this.binds[network]) {
+      return this.binds[network].binds.find(binding => {
+        return binding.network === network &&
+               binding.channel === channel &&
+               binding.destination === destination &&
+               binding.target === target;
+      });
     }
   }
 
@@ -357,7 +372,7 @@ export class Bind implements IBind {
 }
 
 
-interface IBind extends Options {
+export interface IBind extends Options {
   network: string;
   channel: string;
   destination: string;
@@ -392,7 +407,7 @@ export interface IBindOptions extends Options {
   listen_part?: boolean;
 }
 
-interface Options {
+export interface Options {
   active?: boolean;
   duplex?: boolean;
   unrestricted?: boolean;

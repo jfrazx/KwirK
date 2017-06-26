@@ -12,7 +12,7 @@ act as a bridge between popular services.
 - support multiple chat protocols  
 - IRC is the current focus with Slack and HipChat next on the list  
 - link channels on the different networks  (IRC<->IRC is alpha)
-- transparent channel encryption with DiffieHellman key exchange  
+- transparent channel encryption with Diffie-Hellman key exchange  
 - http administrative front-end and client area  
 - ability to link multiple bots  
 - more secure, eggdrop like command console

@@ -3,7 +3,7 @@
 * Demonstrate how to add an event listener for an evil bot
 */
 
-const Kwirk = require( '../index' )
+const Kwirk = require( '../dist/index' )
   , bot   = new Kwirk.Bot();
 
 const freenode = {

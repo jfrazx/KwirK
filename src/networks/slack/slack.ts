@@ -46,6 +46,6 @@ export interface ISlackOptions extends SlackOptions, INetOptions {
 
 }
 
-interface SlackOptions extends INetworkOptions {
+export interface SlackOptions extends INetworkOptions {
 
 }

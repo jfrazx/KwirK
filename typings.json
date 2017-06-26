@@ -1,23 +1,19 @@
 {
   "name": "kwirk",
   "version": false,
-  "ambientDependencies": {
-    "async": "github:DefinitelyTyped/DefinitelyTyped/async/async.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645",
-    "eventemitter2": "github:DefinitelyTyped/DefinitelyTyped/eventemitter2/eventemitter2.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645",
-    "lodash": "github:DefinitelyTyped/DefinitelyTyped/lodash/lodash.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645",
-    "node": "registry:dt/node#4.0.0+20160509154515",
-    "winston": "github:DefinitelyTyped/DefinitelyTyped/winston/winston.d.ts#7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645"
-  },
   "dependencies": {
     "bluebird": "registry:dt/bluebird#3.0.0+20161229155504",
     "chai": "registry:npm/chai#3.5.0+20160723033700",
+    "iconv": "registry:dt/iconv#2.1.11+20160620211513",
     "lodash": "registry:dt/lodash#4.14.0+20170127172909",
     "sinon": "registry:npm/sinon#1.16.0+20160723033700",
-    "winston": "registry:dt/winston#2.2.0+20170106144044"
+    "winston": "registry:dt/winston#2.3.0+20170323124512"
   },
   "globalDependencies": {
+    "async": "registry:dt/async#2.0.1+20170322225536",
     "eventemitter2": "registry:dt/eventemitter2#2.2.0+20161123234806",
     "mocha": "registry:dt/mocha#2.2.5+20170118061455",
+    "moment": "registry:dt/moment#2.11.1+20161010105546",
     "node": "registry:env/node#6.0.0+20170119204930"
   }
 }

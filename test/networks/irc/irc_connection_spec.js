@@ -1,11 +1,11 @@
 
-var Kwirk      = require( '../../../index' );
-var Bot        = Kwirk.Bot;
-var Connection = Kwirk.IrcConnection;
-var assert     = require( 'assert' );
+const Kwirk      = require( '../../../index' );
+const Bot        = Kwirk.Bot;
+const Connection = Kwirk.IrcConnection;
+const assert     = require( 'assert' );
 
 describe( 'IRC Connection', function() {
-  var bot = new Bot();
+  const bot = new Bot();
   bot.addNetwork({
     name: 'freenode',
     type: 'irc',
@@ -18,8 +18,8 @@ describe( 'IRC Connection', function() {
     ]
   });
 
-  var connection = new Connection( bot.network[ 'freenode' ], bot.network[ 'freenode' ].servers[0] );
-  var lines = [
+  const connection = new Connection( bot.network[ 'freenode' ], bot.network[ 'freenode' ].servers[0] );
+  const lines = [
     ':dk.mythnet.org 001 kwirk :Welcome to the Mythnet Internet Relay Chat Network kwirk',
     ':dk.mythnet.org 002 kwirk :Your host is dk.mythnet.org[5.56.159.140/7000], running version charybdis-3.3',
     ':dk.mythnet.org 254 kwirk 89 :channels formed',
@@ -30,8 +30,8 @@ describe( 'IRC Connection', function() {
   ];
 
   it( 'should parse messages', function() {
-    lines.forEach( function( line ) {
-      connection.onData( line );
+    lines.forEach(function(line) {
+      connection.onData(line);
     });
   });
 });

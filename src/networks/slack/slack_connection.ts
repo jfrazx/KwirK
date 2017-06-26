@@ -23,6 +23,6 @@ export class SlackConnection extends Connection<Slack> implements ISlackConnecti
   }
 }
 
-interface ISlackConnection extends IConnection<Slack> {
+export interface ISlackConnection extends IConnection<Slack> {
 
 }

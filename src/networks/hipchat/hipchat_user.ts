@@ -31,7 +31,7 @@ export class HipChatUser extends User<HipChat> implements IHipChatUser {
 
 }
 
-interface IHipChatUser extends IHipChatUserOptions, IUser<HipChat> {
+export interface IHipChatUser extends IHipChatUserOptions, IUser<HipChat> {
 
 }
 

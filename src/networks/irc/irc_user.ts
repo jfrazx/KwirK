@@ -55,7 +55,7 @@ export class IrcUser extends User<Irc> implements IIrcUser {
   }
 }
 
-interface IIrcUser extends IIrcUserOptions, IUser<Irc> {
+export interface IIrcUser extends IIrcUserOptions, IUser<Irc> {
 
 }
 

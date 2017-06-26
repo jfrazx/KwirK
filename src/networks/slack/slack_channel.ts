@@ -29,10 +29,10 @@ export class SlackChannel extends Channel<Slack> implements ISlackChannel {
   }
 }
 
-interface ISlackChannel extends ISlackChannelOptions, IChannel<Slack> {
+export interface ISlackChannel extends ISlackChannelOptions, IChannel<Slack> {
 
 }
 
-interface ISlackChannelOptions extends IChannelOptions {
+export interface ISlackChannelOptions extends IChannelOptions {
 
 }

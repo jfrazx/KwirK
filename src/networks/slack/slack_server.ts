@@ -24,10 +24,10 @@ export class SlackServer extends Server<Slack> implements ISlackServer {
 
 }
 
-interface ISlackServer extends IServer<Slack>, ISlackServerOptions {
+export interface ISlackServer extends IServer<Slack>, ISlackServerOptions {
 
 }
 
-interface ISlackServerOptions extends IServerOptions {
+export interface ISlackServerOptions extends IServerOptions {
 
 }

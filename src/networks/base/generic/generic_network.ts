@@ -44,6 +44,6 @@ export interface IGenericOptions extends GenericOptions, INetOptions {
 
 }
 
-interface GenericOptions extends INetworkOptions {
+export interface GenericOptions extends INetworkOptions {
 
 }

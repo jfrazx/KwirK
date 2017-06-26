@@ -3,7 +3,7 @@
 */
 
 // for now, npm package eventually
-const Kwirk = require('../index'),
+const Kwirk = require('../dist/index'),
     bot   = new Kwirk.Bot();
 
 const freenode = {
@@ -17,12 +17,12 @@ const freenode = {
       enable: false
     },
     {
-      host: 'adams.freenode.net',
+      host: 'chat.freenode.net',
       port: 7000,
       ssl: true
     },
     {
-      host: 'asimov.freenode.net',
+      host: 'irc.freenode.net',
       port: 7000,
       ssl: true
     }
@@ -96,7 +96,7 @@ bot.addNetwork( freenode )
      })
      // chain methods, all messages from user 'Nick', minus any above rejections
      .accept( function( message ) {
-       return message.nick == 'Nick';
+       return message.nick === 'Nick';
      })
      // with false only matched accepts (see above) will get through
      .unrestricted = false;

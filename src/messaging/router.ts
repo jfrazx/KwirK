@@ -44,20 +44,20 @@ export class Router {
     */
     // if ( message.nick === this.bot.network[ message.network.name ].connection.nick ) return;
 
-    let binds = Bind.binds;
+    const binds = Bind.binds;
 
     /**
     * determine if any bindings have been supplied for the source network
     * and if so, is it currently enabled
     */
     if ( binds[ message.network.name ] && binds[ message.network.name ].enable ) {
-      let bindings = binds[ message.network.name ].binds;
+      const bindings = binds[ message.network.name ].binds;
 
       /**
       * iterate through the source network bindings to try and find a match
       * @todo I think this needs to be changed
       */
-      bindings.forEach( ( bind ) => {
+      bindings.forEach(bind => {
 
         /**
         * The bind must be enabled
@@ -65,12 +65,13 @@ export class Router {
         if ( bind.enabled() ) {
           if ( message.channel.name === bind.channel ) {
 
-            let joinPart = !!message.command.match( /^JOIN|PART$/i );
-            let msg: Message<N> = null;
+            const joinPart = message.join() || message.part();
             /**
             * Let the bind determine if the message is a match
             */
-            if ( msg = bind.match( message )) {
+            const msg: Message<N> = bind.match(message);
+
+            if (msg) {
               /*
               * determine if our destination network and target channel exists
               */
@@ -81,7 +82,7 @@ export class Router {
                 /**
                 * Finally send the message to the destination target
                 */
-                this.bot.network[ bind.destination ].channel[ bind.target ].say( msg.response );
+                this.bot.network[bind.destination].channel[bind.target].say(msg.response);
               }
             }
 

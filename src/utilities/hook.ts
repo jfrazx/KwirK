@@ -6,14 +6,14 @@ import { EventEmitter } from './events';
 /**
 * TODO: use promises or async to fix some of the obvious issues here
 */
-module Hook {
+namespace Hook {
   /**
   * all registered Hooks
   */
-  export var hooks: { [ event: string ]: { [ which: string ]: IHook[] } } = {};
-  export var emitter = new EventEmitter();
+  export const hooks: { [ event: string ]: { [ which: string ]: IHook[] } } = {};
+  export const emitter = new EventEmitter();
 
-  var job: Job = { is_busy: false, events: [] };
+  const job: Job = { is_busy: false, events: [] };
 
   export function registerPre( event: string, hook: IHook ): boolean {
     return register( event, hook, true );
@@ -118,7 +118,7 @@ module Hook {
 
     for ( let i = 0; i < collection.length; i++ ) {
       job.is_busy = true;
-      var hook = collection[ i ];
+      const hook = collection[ i ];
       try {
         // use custom or passed context/args ?
         context = hook.context === undefined ? context : hook.context;
@@ -144,10 +144,10 @@ module Hook {
 
           // if we just want a custom emit before/after an event...
           if ( hook.emit && hook.emit.trim().length  && ( typeof hook.callback !== 'function' ))
-            emitter.emit( hook.emit, args )
+            emitter.emit( hook.emit, args );
 
       }
-      catch( e ) {
+      catch ( e ) {
         if ( !hook.ignoreErrors ) {
           unbusy( event );
           throw e; // hmm..?
@@ -182,8 +182,8 @@ module Hook {
   }
 
   export interface Job {
-    is_busy: boolean,
-    events: string[]
+    is_busy: boolean;
+    events: string[];
   }
 
   export interface IHook {

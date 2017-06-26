@@ -1,16 +1,16 @@
 
-var Kwirk  = require( '../../../index' );
-var Bot    = Kwirk.Bot;
-var Server = Kwirk.Server;
-var IRC    = Kwirk.IRC;
-var assert = require( 'assert' );
+const Kwirk  = require( '../../../index' );
+const Bot    = Kwirk.Bot;
+const Server = Kwirk.Server;
+const IRC    = Kwirk.IRC;
+const assert = require( 'assert' );
 
 describe( "IRC", function(){
-  var bot = new Bot();
+  const bot = new Bot();
 
   describe( 'configuration', function(){
     it( 'should have default values applied', function(){
-      var network = new IRC( bot,
+      const network = new IRC( bot,
         {
           type: 'irc',
           name: 'freenode',
@@ -46,7 +46,7 @@ describe( "IRC", function(){
     });
 
     it( 'should accept assigned default values', function(){
-      var network = new IRC( bot,
+      const network = new IRC( bot,
         {
           name: 'freenode',
           type: 'irc',
@@ -80,7 +80,7 @@ describe( "IRC", function(){
     });
 
     it('should accept values and assign defaults', function(){
-      var network = new IRC( bot,
+      const network = new IRC( bot,
         {
           type: 'irc',
           name: 'freenode',
@@ -109,7 +109,7 @@ describe( "IRC", function(){
     });
 
     it.skip('should accept values and assign defaults from bot initialization', function(){
-      var bot = new Bot(
+      const bot = new Bot(
         {
           networks: [{
             name: 'freenode',
@@ -128,7 +128,7 @@ describe( "IRC", function(){
         }
       );
 
-      var network = bot.networks[0];
+      const network = bot.networks[0];
 
       assert.equal(network.encoding, 'utf8');
       assert.equal(network.nick, 'kwirk');
@@ -142,7 +142,7 @@ describe( "IRC", function(){
     });
 
     it('should have an array of Servers', function(){
-      var network = new IRC( bot,
+      const network = new IRC( bot,
         {
           name: 'freenode',
           enable: false,
@@ -171,7 +171,7 @@ describe( "IRC", function(){
     });
 
     it('should have a network name', function(){
-      var network = new IRC( bot,
+      const network = new IRC( bot,
         {
           name: 'freenode',
           enable: false,
@@ -187,7 +187,7 @@ describe( "IRC", function(){
     });
 
     it('should be disabled', function(){
-      var network = new IRC( bot,
+      const network = new IRC( bot,
         {
           name: 'freenode',
           type: 'irc',
@@ -204,7 +204,7 @@ describe( "IRC", function(){
     });
 
     it('should be enabled', function(){
-      var network = new IRC( bot,
+      const network = new IRC( bot,
         {
           name: 'freenode',
           enable: true,

@@ -18,10 +18,10 @@ export class HipChatServer extends Server<HipChat> implements IHipChatServer {
 
 }
 
-interface IHipChatServer extends IServer<HipChat>, IHipChatServerOptions {
+export interface IHipChatServer extends IServer<HipChat>, IHipChatServerOptions {
 
 }
 
-interface IHipChatServerOptions extends IServerOptions {
+export interface IHipChatServerOptions extends IServerOptions {
 
 }

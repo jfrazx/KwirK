@@ -1,7 +1,7 @@
 'use strict';
 
 import { Bind, BindOptions, IBindOptions } from '../../messaging/bind';
-import { TimerJobs, ITimerJobsOptions } from 'timerjobs/src/timerjobs';
+import { Timer, ITimerOptions } from '../../utilities/timer';
 import { AnyNet, IAnyNet } from '../netfactory';
 import { UsersList } from './users_list';
 import { Connection } from './connection';
@@ -26,24 +26,25 @@ export abstract class Network implements INetwork {
   protected _connected: boolean = false;
   protected _enable: boolean = true;
 
-  constructor( public bot: Bot, options: IAnyNet = {} ) {
-    if ( !options.name || !options.name.trim().length )
-      throw new Error( 'a network name must be supplied' );
+  constructor(public bot: Bot, options: IAnyNet = {}) {
+    if (!options.name || !options.name.trim().length) {
+      throw new Error('a network name must be supplied');
+    }
 
     this.name    = options.name.toLowerCase();
-    this._enable = options.enable === undefined ? true : !!options.enable;
+    this._enable = options.enable === void 0 ? true : Boolean(options.enable);
     this.type    = options.type;
-    this.bot.timers[ this.name ] = [];
+    this.bot.timers[this.name] = [];
 
-    this.bot.Logger.info( `Created new network ${ this.name } of type ${ this.type }` );
+    this.bot.Logger.info(`Created new network ${ this.name } of type ${ this.type }`);
   }
 
-  public bind( options: IBindOptions, inherit: boolean = false ): Bind {
-    let opts = <BindOptions> options;
+  public bind(options: IBindOptions, inherit: boolean = false): Bind {
+    const opts = <BindOptions>options;
 
     opts.source_network = this.name;
 
-    return new Bind( this.bot, opts, inherit );
+    return new Bind(this.bot, opts, inherit);
   }
 
   /**
@@ -139,8 +140,8 @@ export abstract class Network implements INetwork {
   * @param <Function> callback: The timer job to callback
   * @return <Timer>
   */
-  public Timer( options: ITimerJobsOptions, callback: ( done: Function ) => void ): TimerJobs {
-    let timer = new this.bot.Timer( options, callback );
+  public Timer( options: ITimerOptions, callback: ( done: Function ) => void ): Timer {
+    const timer = new this.bot.Timer( options, callback );
 
     this.bot.timers[ this.name ].push( timer );
 

@@ -24,9 +24,9 @@ export class IrcServer extends Server<Irc> implements IIRCServer {
     _.merge( this, _.omit( _.defaults( options, this.defaults() ), [ 'enable' ] ));
     this._enable = options.enable;
 
-    if ( !this.host || !this.host.length )
+    if ( !this.host || !this.host.length ) {
       throw new Error( 'you must supply a server host' );
-
+    }
 
     this.network.bot.on( `connect::${ this.network.name }::${ this.host }`, this.onConnect.bind( this ) );
     this.network.bot.on( `disconnect::${ this.network.name }::${ this.host }`, this.onDisconnect.bind( this ) );
@@ -111,7 +111,7 @@ export interface IIrcServerOptions extends ServerOptions {
   enable?: boolean;
 }
 
-interface ServerOptions extends IServerOptions  {
+export interface ServerOptions extends IServerOptions  {
   host: string;
   ssl?: boolean;
   password?: string;

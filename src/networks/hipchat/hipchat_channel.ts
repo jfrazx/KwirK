@@ -29,10 +29,10 @@ export class HipChatChannel extends Channel<HipChat> implements IHipChatChannel 
   }
 }
 
-interface IHipChatChannel extends IHipChatChannelOptions, IChannel<HipChat> {
+export interface IHipChatChannel extends IHipChatChannelOptions, IChannel<HipChat> {
 
 }
 
-interface IHipChatChannelOptions extends IChannelOptions {
+export interface IHipChatChannelOptions extends IChannelOptions {
 
 }

@@ -86,7 +86,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
   * @return <void>
   */
   public action( message: string, force?: boolean ): void {
-    this.say( `\u0001ACTION ${ message }\u0001`, force );
+    this.say(`\u0001ACTION ${ message }\u0001`, force);
   }
 
   /**
@@ -252,7 +252,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
   }
 }
 
-interface IIrcChannel extends IIrcChannelOptions, IChannel<Irc> {
+export interface IIrcChannel extends IIrcChannelOptions, IChannel<Irc> {
   addUser( user: IrcUser ): IrcUser;
   addUser( user: IIrcUserOptions ): IrcUser;
 

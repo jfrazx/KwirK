@@ -301,7 +301,7 @@ export class Handler {
 
   public RPL_NAMEREPLY( message: any ): void {
     const channel = this.network.channel[ message.params[ 2 ] ];
-    const names   = message.params[ message.params.length-1 ].split( ' ' );
+    const names   = message.params[ message.params.length - 1 ].split( ' ' );
 
     names.forEach( ( name: string ) => {
       channel.addUser( { name: name } );
@@ -533,7 +533,7 @@ export class Handler {
 
     switch ( message.params[ 1 ] ) {
       case 'LS':
-        capabilities = []; //temporary, will deal with this soon
+        capabilities = []; // temporary, will deal with this soon
         if ( capabilities.length ) {
           this.network.connection.capabilities.requested = capabilities;
           this.network.connection.sendCapReq( capabilities.join( ' ' ) );

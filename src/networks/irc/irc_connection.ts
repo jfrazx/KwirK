@@ -1,8 +1,8 @@
 
 import { Connection, IConnection } from '../base/connection';
 import { MessageBuffer } from './message_buffer';
+import { Timer } from '../../utilities/timer';
 import * as Hook from '../../utilities/hook';
-import { TimerJobs } from 'timerjobs/src/timerjobs';
 import { IrcServer } from './irc_server';
 import { Handler } from './handler';
 import { Bot } from '../../bot';
@@ -22,11 +22,11 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   // the actual nick in use
   public nick: string;
 
-  private reconnect_timer: TimerJobs;
+  private reconnect_timer: Timer;
   private handler: Handler;
-  private pong_timer: TimerJobs;
+  private pong_timer: Timer;
   private _ping_delay: number;
-  private message_buffer: MessageBuffer;
+  private messageBuffer: MessageBuffer;
   public reconnect_delay: number = IrcConnection.DEFAULT_DELAY;
 
   private static MIN_PING      = 15000;
@@ -34,20 +34,18 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   private static MAX_PING      = 300000;
   private static DEFAULT_DELAY = 5000;
 
-  constructor( public network: Irc, options: IrcConnectionOptions ) {
-    super( network );
+  constructor(public network: Irc, options: IrcConnectionOptions) {
+    super(network);
 
-    this.ping_delay = options.ping_delay;
-
-    this.handler = new Handler( this.network );
-
-    this.message_buffer = new MessageBuffer( this );
-
+    this.ping_delay      = options.ping_delay;
+    this.handler         = new Handler(this.network);
+    this.messageBuffer  = new MessageBuffer(this);
     this.reconnect_timer = this.network.Timer({
       infinite: false,
       interval: this.reconnect_delay,
-      reference: `reconnect_timer_${ this.network.name }`,
-    }, this.network.connect.bind( this.network ) );
+      namespace: this.network.name,
+      reference: `reconnect_timer`,
+    }, this.network.connect.bind(this.network));
 
     this.setupListeners();
   }
@@ -56,68 +54,70 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * Connect to the IRCD
   * @return <void>
   */
-  public connect( callback?: Function ): void {
-    if ( this.connected() ) {
-      this.network.bot.emit( `network_already_connected::${ this.network.name }`, this.network, this.server );
-      return callback && callback( null );
+  public connect(callback?: Function): void {
+    if (this.connected()) {
+      this.network.bot.emit(`network_already_connected::${ this.network.name }`, this.network, this.server);
+      return callback && callback(null);
     }
 
-    let socket_connect_event: string;
+    this.network.bot.Logger.info(`Attempting connection for network ${ this.network.name } on server ${ this.server.host } using ${ this.server.ssl ? 'secure' : 'clear' } channel`);
+
+    const socketConnectEvent: string = this.server.ssl ? 'secureConnect' : 'connect';
 
     this.request_disconnect = false;
     this.registered = false;
 
     // reg_listen should be a connection property
-    this.handler.setRegistrationListener( this.network.reg_listen );
+    this.handler.setRegistrationListener(this.network.reg_listen);
 
-    Hook.pre( 'connect', this );
+    Hook.pre('connect', this);
 
-    socket_connect_event = 'connect';
+    if (this.server.ssl) {
 
-    if ( this.server.ssl ) {
-
-      this.socket = tls.connect( {
+      this.socket = tls.connect({
         rejectUnauthorized: this.network.reject_invalid_certs,
         host: this.server.host,
         port: this.server.port
-      } );
-
-      socket_connect_event = 'secureConnect';
+      });
     }
     else {
       this.socket = new Socket();
-      this.socket.connect( this.server.port, this.server.host );
+      this.socket.connect(this.server.port, this.server.host);
     }
 
-    this.socket.on( socket_connect_event, this.connectionSetup.bind( this ) )
-      .on( 'error', this.onError.bind( this ) );
+    this.socket.on(socketConnectEvent, this.connectionSetup.bind(this))
+      .on('error', this.onError.bind(this));
 
-    callback && callback ( null );
+    callback && callback(null);
   }
 
   get ping_delay(): number {
     return this._ping_delay;
   }
 
-  set ping_delay( delay: number ) {
-    const to_milliseconds = delay * 1000;
+  set ping_delay(delay: number) {
+    const toMilliseconds = delay * 1000;
 
-    if ( !to_milliseconds
-        || ( Math.floor(delay) < IrcConnection.MIN_PING
-            && ( to_milliseconds > IrcConnection.MAX_PING
-                || to_milliseconds < IrcConnection.MIN_PING ) )
-        || delay > IrcConnection.MAX_PING ) {
+
+    if (this.invalidPing(toMilliseconds, delay)) {
       delay = IrcConnection.DEFAULT_PING;
     }
-    else if ( delay < IrcConnection.MIN_PING && to_milliseconds <= IrcConnection.MAX_PING ) {
-      delay = to_milliseconds;
+    else if (delay < IrcConnection.MIN_PING && toMilliseconds <= IrcConnection.MAX_PING) {
+      delay = toMilliseconds;
     }
 
-    this._ping_delay = Math.floor( delay );
+    this._ping_delay = Math.floor(delay);
 
-    if ( this.pong_timer ) {
-      this.pong_timer.restart( this.ping_delay );
+    if (this.pong_timer) {
+      this.pong_timer.restart(this.ping_delay);
     }
+  }
+
+  private invalidPing(milli: number, delay: number): boolean {
+    return !milli
+        || (delay < IrcConnection.MIN_PING
+            && !(_.inRange(milli, IrcConnection.MIN_PING, IrcConnection.MAX_PING)))
+        || delay > IrcConnection.MAX_PING;
   }
 
   private connectionSetup(): void {
@@ -126,20 +126,22 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
     this._connected = true;
 
     this.sendCapLs();
-
     this.sendLogin();
 
-    this.socket.on( 'data', this.message_buffer.onData.bind( this.message_buffer ) );
-    this.socket.on( 'end', this.onEnd.bind( this ) );
-    this.socket.on( 'close', this.onClose.bind( this ) );
+    // this.socket.on('data', this.messageBuffer.onData.bind(this.messageBuffer));
 
-    this.network.bot.emit( 'connect::' + this.network.name, this.network, this.server );
+    this.messageBuffer.handleData(this.socket);
+
+    this.socket.on('end', this.onEnd.bind(this));
+    this.socket.on('close', this.onClose.bind(this));
+
+    this.network.bot.emit(`connect::${this.network.name}`, this.network, this.server);
   }
 
   private pipeSetup(): void {
-    this.buffer.pipe( this.socket );
-    this.buffer.on( 'pause', () => {
-      this.buffer.once( 'drain', () => {
+    this.buffer.pipe(this.socket);
+    this.buffer.on('pause', () => {
+      this.buffer.once('drain', () => {
         this.buffer.resume();
       });
     });
@@ -150,44 +152,44 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @param <string> message: The quit message to send
   * @return <void>
   */
-  public disconnect( callback?: Function ): void;
-  public disconnect( message?: string ): void;
-  public disconnect( message: string, callback: Function ): void;
-  public disconnect( message: any = this.network.quit_message, callback?: Function ): void {
-    if ( typeof message === 'function' ) {
+  public disconnect(callback?: Function): void;
+  public disconnect(message?: string): void;
+  public disconnect(message: string, callback: Function): void;
+  public disconnect(message: any = this.network.quit_message, callback?: Function): void {
+    if (typeof message === 'function') {
       callback = message;
       message = this.network.quit_message;
     }
 
-    if ( !this.connected() && !this.socket ) {
-      return callback && callback( null );
+    if (!this.connected() && !this.socket) {
+      return callback && callback(null);
     }
 
     this.request_disconnect = true;
 
-    this.send( `QUIT :${ message }` );
-    this.send( null );
+    this.send(`QUIT :${ message }`);
+    this.send(null);
 
-    setTimeout( () => {
-      process.nextTick( this.end.bind( this ) );
-    }, 100 );
+    setTimeout(() => {
+      process.nextTick(this.end.bind(this));
+    }, 100);
 
-    callback && callback( null );
+    callback && callback(null);
   }
 
   public dispose(): void {
-    if ( this.connected() )
+    if (this.connected())
       this.disconnect();
 
-    if ( this.reconnect_timer )
+    if (this.reconnect_timer)
       this.reconnect_timer.stop();
 
-    if ( this.socket )
+    if (this.socket)
       this.end();
 
     this.network.dispose();
 
-    if ( this.pong_timer ) {
+    if (this.pong_timer) {
       this.pong_timer.stop();
       this.pong_timer = null;
     }
@@ -198,14 +200,14 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
 
   public end(): void {
     this.network.clearTimers();
-    this.buffer.unpipe( this.socket );
+    this.buffer.unpipe(this.socket);
     this.disposeSocket();
   }
 
   // more on this later...
-  public send( data: string, callback?: Function ): void {
-    if ( this.connected() && this.socket )
-      this.buffer.push( data + '\r\n' );
+  public send(data: string, callback?: Function): void {
+    if (this.connected() && this.socket)
+      this.buffer.push(data + '\r\n');
   }
 
   /**
@@ -213,11 +215,11 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @param <boolean> error: Did the socket connection close because of an error?
   * @return <void>
   */
-  private onClose( error: boolean ): void {
+  private onClose(error: boolean): void {
 
     this._connected = false;
 
-    if ( !this.request_disconnect )
+    if (!this.request_disconnect)
       this.reconnect();
   }
 
@@ -227,12 +229,12 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @return <void>
   * @private
   */
-  private onError( e: any ): void {
-    this.network.bot.Logger.error( `an ${ e.code } error occured`, e );
+  private onError(e: any): void {
+    this.network.bot.Logger.error(`an ${ e.code } error occured`, e);
 
     this._connected = false;
 
-    switch ( e.code ) {
+    switch (e.code) {
       case 'ECONNRESET':
       case 'EPIPE':
 
@@ -246,7 +248,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
         return this.network.jump();
 
       case 'ETIMEDOUT':
-        if ( this.reconnect_attempts >= this.network.connection_attempts ) {
+        if (this.reconnect_attempts >= this.network.connection_attempts) {
           this.server.disable();
           this.reconnect_attempts = 0;
           return this.network.jump();
@@ -256,7 +258,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
         this.reconnect();
         break;
       default: {
-        this.network.bot.Logger.error( 'an unmanaged error occurred', e );
+        this.network.bot.Logger.error('an unmanaged error occurred', e);
       }
     }
   }
@@ -266,12 +268,12 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @return <void>
   */
   private reconnect(): void {
-    this.reconnect_delay = this.reconnect_delay * ( this.reconnect_attempts + 1 ) || this.reconnect_delay;
+    this.reconnect_delay = this.reconnect_delay * (this.reconnect_attempts + 1) || this.reconnect_delay;
 
-    if ( this.reconnect_delay > Math.pow( 8, 7 ) )
-      this.reconnect_delay = Math.pow( 8, 7 );
+    if (this.reconnect_delay > Math.pow(8, 7))
+      this.reconnect_delay = Math.pow(8, 7);
 
-    this.network.bot.Logger.info( `setting timer to delay ${ this.server.host } reconnection for ${ this.reconnect_delay / 1000 } seconds on network ${ this.network.name }` );
+    this.network.bot.Logger.info(`setting timer to delay ${ this.server.host } reconnection for ${ this.reconnect_delay / 1000 } seconds on network ${ this.network.name }`);
 
     this.reconnect_timer.interval = this.reconnect_delay;
     this.reconnect_timer.start();
@@ -281,36 +283,36 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * What to do after a successful registration
   * @return <void>
   */
-  private onRegistered( network: Irc ): void {
+  private onRegistered(network: Irc): void {
     this.registered = true;
     this.reconnect_attempts = 0;
     this.reconnect_delay = IrcConnection.DEFAULT_DELAY;
 
-    Hook.post( 'connect', this.network );
+    Hook.post('connect', this.network);
 
-    if ( this.network.use_ping_timer ) {
-      this.pong_timer = this.network.Timer(
-        {
+    if (this.network.use_ping_timer) {
+      this.pong_timer = this.network.Timer({
           interval: this.ping_delay,
           autoStart: true,
           blocking: false,
           ignoreErrors: true,
           immediate: true,
           emitLevel: 0,
-          reference: 'pong::' + this.network.name,
+          namespace: this.network.name,
+          reference: 'pong',
           stopOn: 'disconnect::' + this.network.name,
           restartOn: 'registered::' + this.network.name
-        }, this.pong.bind( this ) );
+        }, this.pong.bind(this));
     }
   }
 
   private onEnd(): void {
     this._connected = false;
 
-    if ( this.request_disconnect ) {
+    if (this.request_disconnect) {
 
     } else {
-      // do things to reconnect ( should we assume or have a reconnect: boolean setting ?)
+      // do things to reconnect (should we assume or have a reconnect: boolean setting ?)
     }
   }
 
@@ -319,23 +321,23 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @param <string> message: the message to include
   * @return <void>
   */
-  public pong( done?: Function ): void;
-  public pong( message: string, done?: Function ): void;
-  public pong( message?: any, done?: Function ): void {
-    if ( typeof message === 'function' ) {
+  public pong(done?: Function): void;
+  public pong(message: string, done?: Function): void;
+  public pong(message?: any, done?: Function): void {
+    if (typeof message === 'function') {
       done = message;
       message = null;
     }
 
     message = message || this.server.host;
 
-    if ( !this.socket || this.disconnected() ) {
+    if (!this.socket || this.disconnected()) {
         this.pong_timer && this.pong_timer.stop();
     }
 
-    this.send( `PONG ${ message }` );
+    this.send(`PONG ${ message }`);
 
-    if ( done )
+    if (done)
       done();
   }
 
@@ -344,7 +346,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @return <void>
   */
   private sendCapLs(): void {
-    this.send( 'CAP LS 302' );
+    this.send('CAP LS 302');
   }
 
   /**
@@ -352,8 +354,8 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @param <string> capabilities: The capabilities to request from the Server
   * @return <void>
   */
-  public sendCapReq( capabilities: string = '' ): void {
-    this.send( `CAP REQ :${ capabilities }` );
+  public sendCapReq(capabilities: string = ''): void {
+    this.send(`CAP REQ :${ capabilities }`);
   }
 
   /**
@@ -361,11 +363,11 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   * @return <void>
   */
   public sendCapEnd(): void {
-    this.send( 'CAP END' );
+    this.send('CAP END');
   }
 
   private setupListeners(): void {
-    this.network.bot.on( `registered::${ this.network.name }`, this.onRegistered.bind( this ));
+    this.network.bot.on(`registered::${ this.network.name }`, this.onRegistered.bind(this));
   }
 
   /**
@@ -374,20 +376,20 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   */
   private sendLogin(): void {
     const password = this.server.password || this.network.password;
-    if ( password )
-      this.send( `PASS ${ password }` );
+    if (password)
+      this.send(`PASS ${ password }`);
 
     this.nick = this.network.generate_nick();
 
-    this.send( `NICK ${ this.nick }` );
-    this.send( `USER ${ this.network.user_name } ${ ( _.includes( this.network.modes, 'i' ) ? '8' : '0' ) }" * :${ this.network.real_name }` );
+    this.send(`NICK ${ this.nick }`);
+    this.send(`USER ${ this.network.user_name } ${ (_.includes(this.network.modes, 'i') ? '8' : '0') }" * :${ this.network.real_name }`);
   }
 }
 
-interface IIrcConnection extends IConnection<Irc> {
+export interface IIrcConnection extends IConnection<Irc> {
   reconnect_attempts: number;
 }
 
-interface IrcConnectionOptions {
+export interface IrcConnectionOptions {
   ping_delay?: number;
 }

@@ -23,10 +23,10 @@ export class GenericChannel extends Channel<Generic> implements IGenericChannel 
   public send(): void {}
 }
 
-interface IGenericChannel extends IChannel<Generic>, IGenericChannelOptions {
+export interface IGenericChannel extends IChannel<Generic>, IGenericChannelOptions {
 
 }
 
-interface IGenericChannelOptions extends IChannelOptions {
+export interface IGenericChannelOptions extends IChannelOptions {
 
 }

@@ -20,6 +20,6 @@ export class GenericConnection extends Connection<Generic> implements IGenericCo
   public end(): void {}
 }
 
-interface IGenericConnection extends IConnection<Generic> {
+export interface IGenericConnection extends IConnection<Generic> {
 
 }

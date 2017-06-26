@@ -45,7 +45,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <boolean>
   */
   public notice(): boolean {
-    return !!~this.events.indexOf( 'notice' );
+    return this.events.includes('notice');
   }
 
   /**
@@ -53,7 +53,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <boolean>
   */
   public private(): boolean {
-    return !!~this.events.indexOf( 'private' );
+    return this.events.includes('private');
   }
 
   /**
@@ -61,7 +61,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <boolean>
   */
   public public(): boolean {
-    return !!~this.events.indexOf( 'public' );
+    return this.events.includes('public');
   }
 
   /**
@@ -69,7 +69,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <boolean>
   */
   public action(): boolean {
-    return !!~this.events.indexOf( 'action' );
+    return this.events.includes('action');
   }
 
   /**
@@ -77,7 +77,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <boolean>
   */
   public message(): boolean {
-    return !!~this.events.indexOf( 'message' );
+    return this.events.includes('message');
   }
 
   /**
@@ -85,7 +85,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <boolean>
   */
   public join(): boolean {
-    return !!~this.events.indexOf( 'join' );
+    return this.events.includes('join');
   }
 
   /**
@@ -93,7 +93,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <boolean>
   */
   public part(): boolean {
-    return !!~this.events.indexOf( 'part' );
+    return this.events.includes('part');
   }
 
   /**
@@ -109,7 +109,7 @@ export class Message<N extends Network> implements IMessage<N> {
   * @return <void>
   */
   public formatResponse(): void {
-    let nick = this.user ? this.user.name : this.nick;
+    const nick = this.user ? this.user.name : this.nick;
 
     switch ( this.command ) {
 
@@ -132,7 +132,7 @@ export class Message<N extends Network> implements IMessage<N> {
   }
 }
 
-interface IMessage<N extends Network> extends MessageOptions<N> {
+export interface IMessage<N extends Network> extends MessageOptions<N> {
   bind: Bind;
   content: string;
   events: string[];
@@ -154,7 +154,7 @@ export interface IMessageOptions<N extends Network> extends MessageOptions<N> {
   message?: string;
 }
 
-interface MessageOptions<N extends Network> {
+export interface MessageOptions<N extends Network> {
   network: N;
   channel: Channel<N>;
   user: User<N>;

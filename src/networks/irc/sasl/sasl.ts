@@ -1,6 +1,6 @@
 // TODO: everything
 
-export module Sasl {
+export namespace Sasl {
 
 }
 

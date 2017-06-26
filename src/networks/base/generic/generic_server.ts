@@ -18,10 +18,10 @@ export class GenericServer extends Server<Generic> implements IGenericServer {
 
 }
 
-interface IGenericServer extends IServer<Generic>, IGenericServerOptions {
+export interface IGenericServer extends IServer<Generic>, IGenericServerOptions {
 
 }
 
-interface IGenericServerOptions extends IServerOptions {
+export interface IGenericServerOptions extends IServerOptions {
 
 }

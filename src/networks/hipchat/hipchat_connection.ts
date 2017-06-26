@@ -23,6 +23,6 @@ export class HipChatConnection extends Connection<HipChat> implements IHipChatCo
   }
 }
 
-interface IHipChatConnection extends IConnection<HipChat> {
+export interface IHipChatConnection extends IConnection<HipChat> {
 
 }

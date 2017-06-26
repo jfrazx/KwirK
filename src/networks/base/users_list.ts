@@ -33,7 +33,7 @@ export class UsersList<N extends Network, T extends User<N>> implements IUsersLi
   }
 }
 
-interface IUsersList<T, N> {
+export interface IUsersList<T, N> {
   network: N;
 
   find( name: string ): T;
