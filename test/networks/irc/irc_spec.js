@@ -1,16 +1,16 @@
 
-const Kwirk  = require( '../../../index' );
-const Bot    = Kwirk.Bot;
+const Kwirk = require('../../../index');
+const Bot = Kwirk.Bot;
 const Server = Kwirk.Server;
-const IRC    = Kwirk.IRC;
-const assert = require( 'assert' );
+const IRC = Kwirk.IRC;
+const assert = require('assert');
 
-describe( "IRC", function(){
+describe("IRC", () => {
   const bot = new Bot();
 
-  describe( 'configuration', function(){
-    it( 'should have default values applied', function(){
-      const network = new IRC( bot,
+  describe('configuration', () => {
+    it('should have default values applied', () => {
+      const network = new IRC(bot,
         {
           type: 'irc',
           name: 'freenode',
@@ -25,7 +25,7 @@ describe( "IRC", function(){
           channels: [
             {
               name: '#kwirk',
-              modes: [ 'n', 't', 's', 'p' ],
+              modes: ['n', 't', 's', 'p'],
               password: 'channelkey',
               key: 'channelfishkey'
             }
@@ -39,14 +39,14 @@ describe( "IRC", function(){
       assert.equal(network.realname, 'KwirK IRC Bot');
       assert.equal(network.user, 'KwirK');
       assert.equal(network.modes.length, 1);
-      assert.deepEqual(network.modes, [ 'i' ]);
+      assert.deepEqual(network.modes, ['i']);
       assert.equal(network.owner, '');
       assert.equal(network.trigger, '!');
-      assert.equal( network.quit_message, 'KwirK, a sophisticated multi-network, multi-protocol bot' );
+      assert.equal(network.quit_message, 'KwirK, a sophisticated multi-network, multi-protocol bot');
     });
 
-    it( 'should accept assigned default values', function(){
-      const network = new IRC( bot,
+    it('should accept assigned default values', () => {
+      const network = new IRC(bot,
         {
           name: 'freenode',
           type: 'irc',
@@ -79,8 +79,8 @@ describe( "IRC", function(){
 
     });
 
-    it('should accept values and assign defaults', function(){
-      const network = new IRC( bot,
+    it('should accept values and assign defaults', () => {
+      const network = new IRC(bot,
         {
           type: 'irc',
           name: 'freenode',
@@ -108,7 +108,7 @@ describe( "IRC", function(){
       assert.equal(network.quit_message, 'KwirK, a sophisticated multi-network, multi-protocol bot');
     });
 
-    it.skip('should accept values and assign defaults from bot initialization', function(){
+    it.skip('should accept values and assign defaults from bot initialization', () => {
       const bot = new Bot(
         {
           networks: [{
@@ -141,8 +141,8 @@ describe( "IRC", function(){
       assert.equal(network.quit_message, 'KwirK, a fancy IRC bot');
     });
 
-    it('should have an array of Servers', function(){
-      const network = new IRC( bot,
+    it('should have an array of Servers', () => {
+      const network = new IRC(bot,
         {
           name: 'freenode',
           enable: false,
@@ -164,14 +164,14 @@ describe( "IRC", function(){
 
       assert.equal(network.servers.length, 2);
 
-      network.servers.forEach(function(server){
+      network.servers.forEach((server) => {
         assert.equal(server instanceof Server, true);
       });
 
     });
 
-    it('should have a network name', function(){
-      const network = new IRC( bot,
+    it('should have a network name', () => {
+      const network = new IRC(bot,
         {
           name: 'freenode',
           enable: false,
@@ -186,8 +186,8 @@ describe( "IRC", function(){
       assert.equal(network.name, 'freenode');
     });
 
-    it('should be disabled', function(){
-      const network = new IRC( bot,
+    it('should be disabled', () => {
+      const network = new IRC(bot,
         {
           name: 'freenode',
           type: 'irc',
@@ -203,8 +203,8 @@ describe( "IRC", function(){
       assert.equal(network.enabled(), false);
     });
 
-    it('should be enabled', function(){
-      const network = new IRC( bot,
+    it('should be enabled', () => {
+      const network = new IRC(bot,
         {
           name: 'freenode',
           enable: true,

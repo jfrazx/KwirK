@@ -23,7 +23,7 @@ export abstract class Channel<N extends Network> extends Target implements IChan
   * @param <boolean> value:
   * @return <void>
   */
-  set inChannel( value: boolean ) {
+  set inChannel(value: boolean) {
     this._in_channel = value;
   }
 

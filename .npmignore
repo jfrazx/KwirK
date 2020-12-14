@@ -9,6 +9,7 @@ todo
 
 */.DS_Store
 
+build-examples/
 node_modules/
 typings/
 src/

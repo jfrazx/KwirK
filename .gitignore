@@ -7,9 +7,10 @@
 src/**/*.d.ts
 
 !test/**/*
-!examples/**/*
 !typings/**/*
 dist/
+build/
+build-examples/
 
 node_modules/
 

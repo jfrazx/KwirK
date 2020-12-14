@@ -16,7 +16,7 @@ export class Ircd {
   public motd: string[];
 
 
-  constructor( public network: Irc ) {
+  constructor(public network: Irc) {
 
   }
 }

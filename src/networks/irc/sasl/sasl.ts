@@ -1,9 +1,6 @@
 // TODO: everything
 
-export namespace Sasl {
-
-}
-
+export namespace Sasl {}
 
 export interface ISasl {
   username: string;

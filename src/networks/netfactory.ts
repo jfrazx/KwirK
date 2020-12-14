@@ -1,13 +1,25 @@
-
 import { HipChat, IHipChatOptions } from './hipchat/hipchat';
+import { INetwork, INetworkOptions } from './base/network';
 import { Slack, ISlackOptions } from './slack/slack';
+import { wrapSurrogate, INext } from 'surrogate';
 import { Irc, IIrcOptions } from './irc/irc';
-import { Network, INetwork, INetworkOptions } from './base/network';
-import { Hook } from '../utilities/hooks';
-import { Bot } from './../bot';
+import { Bot } from '../bot';
+
+interface NetworkConstructor {
+  new (bot: Bot, options: INetworkOptions): INetwork;
+}
+
+interface NetworkMap {
+  [key: string]: NetworkConstructor;
+}
+
+const NETWORKS: NetworkMap = {
+  irc: Irc,
+  hipchat: HipChat,
+  slack: Slack,
+};
 
 export namespace NetFactory {
-
   /**
    * Create a network instance of the given type
    *
@@ -17,32 +29,24 @@ export namespace NetFactory {
    * @param {O} options
    * @returns {AnyNet}
    */
-  export function createNetwork<O extends INetworkOptions>(bot: Bot, options: O): AnyNet {
-    let network: AnyNet;
+  export function create<O extends INetworkOptions>(bot: Bot, options: O): AnyNet {
+    try {
+      const net = wrapSurrogate(new NETWORKS[options.type](bot, options));
 
-    switch (options.type) {
-      // case 'gitter':
-        // network = new Gitter( bot, options );
+      net.getSurrogate().registerPreHook('connect', (next: INext<INetwork>) => {
+        const { instance } = next;
 
-      case 'hipchat':
-        network = new HipChat(bot, options);
-        break;
-      case 'irc':
-        network = new Irc(bot, options);
-        break;
-      case 'slack':
-        network = new Slack(bot, options);
-        break;
-      default:
-        throw new Error(`${ options.type } is not a known network type`);
+        next.next({
+          bail: !instance.enabled(),
+        });
+      });
+
+      return (net as any) as AnyNet;
+    } catch (error) {
+      throw new Error(`${options.type} is not a known network type`);
     }
-
-    return new Proxy(network, new Hook<AnyNet>());
-    // return network;
   }
 }
 
 export type IAnyNet = IIrcOptions | ISlackOptions | IHipChatOptions;
-// export type AnyNet = typeof Network;
-// export type AnyNet = "ANYTHING THAT EXTENDS NETWORK"
 export type AnyNet = Irc | Slack | HipChat;

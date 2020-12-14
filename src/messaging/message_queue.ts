@@ -5,8 +5,6 @@
 //   }
 // }
 
-
-
 interface Path {
   to: string;
   distance: number;
@@ -43,14 +41,18 @@ function makeRoad(from: string, to: string, distance: number) {
 }
 
 function makeRoads(from: string, ...destinations: (string | number)[]) {
-    for (let index = 0; index < destinations.length; index += 2) {
-      makeRoad(from, <string>destinations[index], <number>destinations[index + 1]);
-    }
+  for (let index = 0; index < destinations.length; index += 2) {
+    makeRoad(
+      from,
+      <string>destinations[index],
+      <number>destinations[index + 1],
+    );
+  }
 }
 
 function roadsFrom(place: string): Path[] {
   if (!roads[place]) {
-    throw new Error(`No place '${ place }' found`);
+    throw new Error(`No place '${place}' found`);
   }
 
   return roads[place];
@@ -72,7 +74,9 @@ function gamblerPath(from: string, to: string) {
   while (true) {
     path.push(from);
 
-    if (from === to) { break; }
+    if (from === to) {
+      break;
+    }
 
     from = randomDirection(from);
   }
@@ -134,7 +138,10 @@ function any<T>(array: T[], callback: Function): boolean {
   return false;
 }
 
-function map<T, TResult>(array: T[], callback: (element: T, index?: number) => TResult): TResult[] {
+function map<T, TResult>(
+  array: T[],
+  callback: (element: T, index?: number) => TResult,
+): TResult[] {
   const result: TResult[] = [];
 
   array.forEach(function(element, index) {
@@ -153,7 +160,7 @@ function possibleRoutes(from: string, to: string) {
     function continueRoute(road: Path) {
       return findRoutes({
         places: route.places.concat([road.to]),
-        length: route.length + road.distance
+        length: route.length + road.distance,
       });
     }
 
@@ -161,8 +168,7 @@ function possibleRoutes(from: string, to: string) {
 
     if (end === to) {
       return [route];
-    }
-    else {
+    } else {
       return flatten(map(filter(roadsFrom(end), notVisited), continueRoute));
     }
   }
@@ -184,10 +190,8 @@ function shortestPath(from: string, to: string): Places {
   return shortest;
 }
 
-makeRoads('Point Kiukiu', 'Hanaiapa', 19,
-          'Mt Feani', 15, 'Taaoa', 15);
-makeRoads('Airport', 'Hanaiapa', 6, 'Mt Feani', 5,
-          'Atuona', 4, 'Mt Ootua', 11);
+makeRoads('Point Kiukiu', 'Hanaiapa', 19, 'Mt Feani', 15, 'Taaoa', 15);
+makeRoads('Airport', 'Hanaiapa', 6, 'Mt Feani', 5, 'Atuona', 4, 'Mt Ootua', 11);
 makeRoads('Mt Temetiu', 'Mt Feani', 8, 'Taaoa', 4);
 makeRoads('Atuona', 'Taaoa', 3, 'Hanakee pearl lodge', 1);
 makeRoads('Cemetery', 'Hanakee pearl lodge', 6, 'Mt Ootua', 5);

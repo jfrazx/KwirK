@@ -7,7 +7,10 @@ declare module 'lodash' {
 }
 
 namespace LoDash {
-  export function any<T>(collection: List<T>, predicate?: ListIterator<T, boolean>): boolean {
+  export function any<T>(
+    collection: List<T>,
+    predicate?: ListIterator<T, boolean>,
+  ): boolean {
     return _.some(collection, predicate);
   }
 
@@ -16,21 +19,22 @@ namespace LoDash {
   }
 }
 
-type ListIterator<T, TResult> = (value: T, index: number, collection: List<T>) => TResult;
+type ListIterator<T, TResult> = (
+  value: T,
+  index: number,
+  collection: List<T>,
+) => TResult;
 
 interface List<T> {
-    [index: number]: T;
-    length: number;
+  [index: number]: T;
+  length: number;
 }
 
-_.mixin(Object.keys(LoDash)
-              .reduce(
-                (object, key) => {
-                  object[key] = LoDash[key];
-                  return object;
-                },
-                Object.create(null)
-              )
-        );
+_.mixin(
+  Object.keys(LoDash).reduce((object, key) => {
+    object[key] = (LoDash as any)[key];
+    return object;
+  }, Object.create(null)),
+);
 
 export = _;

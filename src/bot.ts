@@ -1,5 +1,3 @@
-'use strict';
-
 import { AnyNet, IAnyNet, NetFactory } from './networks/netfactory';
 import { Network } from './networks/base/network';
 import { EventEmitter } from './utilities/events';
@@ -9,290 +7,276 @@ import { Router } from './messaging/router';
 import { Timer } from './utilities/timer';
 const Color = require('./utilities/color');
 import * as _ from './utilities/lodash';
-import * as winston from 'winston';
-import * as Promise from 'bluebird';
 
 Color.global();
 
 export class Bot extends EventEmitter implements IBot {
+  public network: { [network: string]: AnyNet } = Object.create(null);
+  public timers: { [network: string]: Timer[] } = Object.create(null);
+  public Logger = Logger;
+  public router: Router;
+  public Timer = Timer;
 
-    public network: { [ network: string ]: AnyNet } = Object.create(null);
-    public timers: { [ network: string ]: Timer[] } = Object.create(null);
-    public Logger = winston;
-    public router: Router;
-    public Timer = Timer;
-    public Color = Color;
-    public Promise = Promise;
+  private static _instance: Bot;
 
-    private static _instance: Bot;
+  constructor() {
+    super();
 
-    constructor() {
-      super();
+    if (Bot._instance) {
+      return Bot._instance;
+    }
 
-      if (Bot._instance) {
-        return Bot._instance;
-      }
+    Bot._instance = this;
 
-      Bot._instance = this;
+    this.setMaxListeners(0);
+    this.Timer.emitter = this;
 
-      this.setMaxListeners(0);
-      // this.Timer.emitter = this;
-
-      // for now, eventually we will daemonize2
-      process.on('SIGINT',  () => {
-        this.Logger.info(`Qutting all networks`);
-        this.quit(() => {
-          process.exit(0);
-        });
+    process.on('SIGINT', () => {
+      this.Logger.info(`Quitting all networks`);
+      this.quit(() => {
+        process.exit(0);
       });
+    });
 
-      this.setupListeners();
+    this.setupListeners();
 
-      this.router = new Router(this);
-    }
+    this.router = new Router(this);
+  }
 
-    /**
-    * Start all the networks, or just one
-    * @param <AnyNet> network: The single network that you want to start
-    * @return <void>
-    */
-    public start(network?: AnyNet): void {
-      if (network) {
-        if (network instanceof Network) {
-          if (!this.network[ network.name ]) {
-            this.network[ network.name ] = network;
-          }
-
-          return network.connect();
-        } else {
-          // should I throw or just log, emit and ignore ?
-          throw new Error((typeof network) + ' is not an instance of a known network');
+  /**
+   * Start all the networks, or just one
+   * @param <AnyNet> network: The single network that you want to start
+   * @return <void>
+   */
+  public start(network?: AnyNet): void {
+    if (network) {
+      if (network instanceof Network) {
+        if (!this.network[network.name]) {
+          this.network[network.name] = network;
         }
-      }
 
-      // no networks?
-      if (!(_.keys(this.network).length)) {
-        this.emit('error', new Error('no networks available'));
-        return;
-      }
-
-      for (const name in this.network) {
-        if (this.network[name].disabled() || this.network[name].connected()) {
-          continue;
-        }
-        this.network[name].connect();
-      }
-    }
-
-    /**
-    * Add a new network to the bot
-    * @param <IAnyNet> netinfo: The network configuration information
-    * @param <Function> callback: Optional callback to perform after network add
-    * <> @param <Error> err: Error to return or null
-    * <> @param <AnyNet> network: The newly created network object
-    * @return <Bot>
-    */
-    public addNetwork(nets: AnyNet, callback?: Function): Bot;
-    public addNetwork(netinfo: IAnyNet, callback?: Function): Bot;
-    public addNetwork(netinfo: any, callback?: Function): Bot {
-      let network: AnyNet;
-      if (netinfo instanceof Network) {
-        network = <AnyNet>netinfo;
+        return network.connect();
       } else {
-        network = NetFactory.createNetwork(this, netinfo);
+        // should I throw or just log, emit and ignore ?
+        throw new Error(`${typeof network} is not an instance of a known network`);
       }
-
-      if (this.networkExists(network.name)) {
-        const err = new Error(`network ${ network.name } already exists`);
-
-        this.emit('error', err);
-
-        callback && callback(err, network);
-      } else {
-        this.network[ network.name ] = network;
-
-        callback && callback(null, network);
-      }
-
-      return this;
     }
 
-    /**
-    * Retrieve a network based on its name
-    * @param <string> name: The name of the network to find
-    * @return <AnyNet>
-    */
-    public getNetwork(name: string): AnyNet {
-      return _.find(this.network , (netname: string) => {
-        return netname === name;
-      });
+    // no networks?
+    if (Object.keys(this.network).length === 0) {
+      this.emit('error', new Error('no networks available'));
+      return;
     }
 
-    /**
-    * Remove a network from the Networks Array/Object
-    * @param <AnyNet> network: The network to remove
-    * @return <Bot>
-    */
-    public removeNetwork(network: AnyNet, callback?: Function): Bot {
-      if (this.networkExists(network.name)) {
-        this.emit('removing network', network.name);
-        this.Logger.info('Removing network ' + network.name);
-
-        this.clearTimers(network.name);
-
-        if (network.connected()) {
-          this.network[network.name].disconnect((err?: Error) => {
-            delete this.network[ network.name ];
-
-            if (err) {
-              this.emit('error', err, 'removeNetwork');
-            }
-            callback && callback(err);
-          });
-        } else { delete this.network[network.name]; }
-      }
-
-      callback && callback(null);
-
-      return this;
-    }
-
-    public networkExists(name: AnyNet): boolean;
-    public networkExists(name: string): boolean;
-    public networkExists(name: any): boolean {
-      if (name instanceof Network) {
-        return !(!_.find(this.network, (network) => {
-          return network === name;
-        }));
-      }
-
-      return !!this.network[ name ];
-    }
-
-    /**
-    * Clear the timers of a particular network, or all of them
-    * @param <string> network: The name of the network to clear timers
-    * @return <Bot>
-    */
-    public clearTimers(network?: string): Bot {
-      if (network) {
-        if (this.timers[ network ]) {
-          this.network[ network ].clearTimers();
-        }
-      }
-      else {
-        for (const network in this.network) {
-          this.network[network].clearTimers();
-        }
-      }
-
-      return this;
-    }
-
-    /**
-    * Stop a network
-    * @param <AnyNet> network: The network to disconnect
-    * @param <string> message: The message to send to the network
-    * @return <void>
-    */
-    public stop(network: AnyNet, message?: string): void {
-      this.network[ network.name ].disconnect(message);
-    }
-
-    /**
-    * Stop all connections and end the program
-    * @param <string> message: A string message to send with the disconnect
-    * @param <Function> callback: Optional callback
-    * @return <void>
-    * TODO: end krepl and http as well when implemented
-    */
-    public quit(callback?: Function): void;
-    public quit(message: string, callback?: Function): void;
-    public quit(message: any, callback?: Function): void {
-      if (typeof message === 'function') {
-        callback = message;
-        message = undefined;
-      }
-
-      this.emit('quit', message);
-
-      _.each(_.keys(this.network), (network) => {
-        this.stop(this.network[ network ], message);
-      });
-
-      callback && callback(null);
-
-      process.nextTick(() => {
-        this.Logger.info('kwirk bot quitting all networks');
-      });
-    }
-
-    /**
-    * Setup general listeners
-    * @return <void>
-    * @private
-    */
-    private setupListeners(): void {
-      this.on('connect::*', this.onConnect.bind(this));
-      this.on('registered::*', this.onRegistered.bind(this));
-      this.on('disconnect::*', this.onDisconnect.bind(this));
-      this.on('error', this.onError.bind(this));
-    }
-
-    /**
-    * Fired when a network is first connected
-    * @param <AnyNet> network: The network that was connected
-    * @param <Server> server: The network server that was connected
-    * @return <void>
-    * @private
-    */
-    private onConnect(network: AnyNet, server: Server<AnyNet>): void {
-      this.Logger.info(`connected to nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
-    }
-
-    /**
-    * Fired when a network is disconnected
-    * @param <AnyNet> network: The network that was disconnected
-    * @param <Server> server: The network server that was disconnected
-    * @return <void>
-    * @private
-    */
-    private onDisconnect(network: AnyNet, server: Server<AnyNet>): void {
-      this.Logger.info(`disconnected from nework ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
-    }
-
-    /**
-    * Fired on any error event
-    * @param <Error> e: The error object
-    * @return <void>
-    * @private
-    */
-    private onError(e: Error): void {
-      this.Logger.error(e.name);
-      this.Logger.error(e.message);
-      this.Logger.error(e.stack);
-    }
-
-    /**
-    * Fired when a network is first registered
-    * @param <AnyNet> network: The network that was registered
-    * @param <Server> server: The network server that was registered
-    * @return <void>
-    * @private
-    */
-    private onRegistered(network: AnyNet, server: Server<AnyNet>): void {
-      this.Logger.info(`registered network ${ network.name } on ${ server.host }${ server.port ? ':' + server.port.toString() : '' }`);
-    }
-
-    public static bot(): Bot {
-      if (this._instance)
-        return this._instance;
-      return new Bot();
+    for (const [_, network] of Object.entries(this.network)) {
+      network.connect();
     }
   }
 
+  /**
+   * Add a new network to the bot
+   * @param <IAnyNet> netinfo: The network configuration information
+   * @param <Function> callback: Optional callback to perform after network add
+   * <> @param <Error> err: Error to return or null
+   * <> @param <AnyNet> network: The newly created network object
+   * @return <Bot>
+   */
+  public addNetwork(netinfo: AnyNet | IAnyNet, callback?: Function): Bot {
+    const network = this.createNetwork(netinfo);
+    let error: Error = null;
+
+    if (this.networkExists(network.name)) {
+      error = new Error(`network ${network.name} already exists`);
+
+      this.emit('error', error);
+    } else {
+      this.network[network.name] = network;
+    }
+
+    callback && callback(error, network);
+
+    return this;
+  }
+
+  private createNetwork(network: IAnyNet | AnyNet): AnyNet {
+    return network instanceof Network ? network : NetFactory.create(this, network);
+  }
+
+  /**
+   * Retrieve a network based on its name
+   * @param <string> name: The name of the network to find
+   * @return <AnyNet>
+   */
+  public getNetwork(name: string): AnyNet {
+    return this.network[name];
+  }
+
+  /**
+   * Remove a network from the Networks Array/Object
+   * @param <AnyNet> network: The network to remove
+   * @return <Bot>
+   */
+  public removeNetwork(network: AnyNet, callback?: Function): Bot {
+    if (this.networkExists(network.name)) {
+      this.emit('removing network', network.name);
+      this.Logger.info('Removing network ' + network.name);
+
+      this.clearTimers(network.name);
+
+      if (network.connected()) {
+        network.disconnect((err?: Error) => {
+          if (err) {
+            this.emit('error', err, 'removeNetwork');
+          }
+          callback && callback(err);
+        });
+      }
+      delete this.network[network.name];
+    }
+
+    callback && callback(null);
+
+    return this;
+  }
+
+  public networkExists(name: AnyNet): boolean;
+  public networkExists(name: string): boolean;
+  public networkExists(name: any): boolean {
+    if (name instanceof Network) {
+      return Boolean(_.find(this.network, (network) => network === name));
+    }
+
+    return Boolean(this.network[name]);
+  }
+
+  /**
+   * Clear the timers of a particular network, or all of them
+   * @param <string> network: The name of the network to clear timers
+   * @return <Bot>
+   */
+  public clearTimers(network?: string): Bot {
+    const networks = network ? [this.network[network]] : Object.values(this.network);
+
+    for (const network of networks) {
+      network.clearTimers();
+    }
+
+    return this;
+  }
+
+  /**
+   * Stop a network
+   * @param <AnyNet> network: The network to disconnect
+   * @param <string> message: The message to send to the network
+   * @return <void>
+   */
+  public stop(network: AnyNet, message?: string): void {
+    this.network[network.name].disconnect(message);
+  }
+
+  /**
+   * Stop all connections and end the program
+   * @param <string> message: A string message to send with the disconnect
+   * @param <Function> callback: Optional callback
+   * @return <void>
+   * TODO: end krepl and http as well when implemented
+   */
+  public quit(callback?: Function): void;
+  public quit(message: string, callback?: Function): void;
+  public quit(message: any, callback?: Function): void {
+    if (typeof message === 'function') {
+      callback = message;
+      message = undefined;
+    }
+
+    this.emit('quit', message);
+
+    Object.values(this.network).forEach((network) => this.stop(network, message));
+
+    callback && callback(null);
+
+    process.nextTick(() => {
+      this.Logger.info('kwirk bot quitting all networks');
+    });
+  }
+
+  /**
+   * Setup general listeners
+   * @return <void>
+   * @private
+   */
+  private setupListeners(): void {
+    this.on('connect::*', this.onConnect.bind(this));
+    this.on('registered::*', this.onRegistered.bind(this));
+    this.on('disconnect::*', this.onDisconnect.bind(this));
+    this.on('error', this.onError.bind(this));
+  }
+
+  /**
+   * Fired when a network is first connected
+   * @param <AnyNet> network: The network that was connected
+   * @param <Server> server: The network server that was connected
+   * @return <void>
+   * @private
+   */
+  private onConnect(network: AnyNet, server: Server<AnyNet>): void {
+    this.Logger.info(
+      `connected to network ${network.name} on ${server.host}${
+        server.port ? ':' + server.port.toString() : ''
+      }`,
+    );
+  }
+
+  /**
+   * Fired when a network is disconnected
+   * @param <AnyNet> network: The network that was disconnected
+   * @param <Server> server: The network server that was disconnected
+   * @return <void>
+   * @private
+   */
+  private onDisconnect(network: AnyNet, server: Server<AnyNet>): void {
+    this.Logger.info(
+      `disconnected from network ${network.name} on ${server.host}${
+        server.port ? ':' + server.port.toString() : ''
+      }`,
+    );
+  }
+
+  /**
+   * Fired on any error event
+   * @param <Error> e: The error object
+   * @return <void>
+   * @private
+   */
+  private onError(e: Error): void {
+    this.Logger.error(e.name);
+    this.Logger.error(e.message);
+    this.Logger.error(e.stack);
+  }
+
+  /**
+   * Fired when a network is first registered
+   * @param <AnyNet> network: The network that was registered
+   * @param <Server> server: The network server that was registered
+   * @return <void>
+   * @private
+   */
+  private onRegistered(network: AnyNet, server: Server<AnyNet>): void {
+    this.Logger.info(
+      `registered network ${network.name} on ${server.host}${
+        server.port ? ':' + server.port.toString() : ''
+      }`,
+    );
+  }
+
+  public static bot(): Bot {
+    if (this._instance) return this._instance;
+    return new Bot();
+  }
+}
+
 export interface IBot {
-  network: { [ network: string ]: AnyNet };
+  network: { [network: string]: AnyNet };
 
   addNetwork(nets: IAnyNet, callback?: Function): Bot;
   getNetwork(network: string): AnyNet;

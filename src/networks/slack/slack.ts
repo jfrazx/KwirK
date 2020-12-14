@@ -22,10 +22,10 @@ export class Slack extends Network implements ISlack {
   }
 
   public disconnect(): void;
-  public disconnect( callback: Function ): void;
-  public disconnect( message: string ): void;
-  public disconnect( message: string, callback: Function ): void;
-  public disconnect( message?: any, callback?: Function ): void {
+  public disconnect(callback: Function): void;
+  public disconnect(message: string): void;
+  public disconnect(message: string, callback: Function): void;
+  public disconnect(message?: any, callback?: Function): void {
   }
 
   public send( message: string ): void {

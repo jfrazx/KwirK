@@ -1,12 +1,12 @@
 
-var Kwirk   = require('../index');
-var assert  = require('assert');
-var Bot     = Kwirk.Bot;
+var Kwirk = require('../index');
+var assert = require('assert');
+var Bot = Kwirk.Bot;
 var Network = Kwirk.Network;
 
-describe('Bot', function(){
-  describe('configuration', function(){
-    it.skip('should have default values applied', function(){
+describe('Bot', function () {
+  describe('configuration', function () {
+    it.skip('should have default values applied', function () {
 
       var bot = new Bot(
         {
@@ -35,7 +35,7 @@ describe('Bot', function(){
       assert.equal(bot.config.defaults.quit_message, 'KwirK, a fancy IRC bot');
     });
 
-    it.skip('should accept assigned default values', function(){
+    it.skip('should accept assigned default values', function () {
       var bot = new Bot(
         {
           networks: [{
@@ -71,7 +71,7 @@ describe('Bot', function(){
       assert.equal(bot.config.defaults.quit_message, 'KWIRK, A FANCY IRC BOT');
     });
 
-    it.skip('should accept values and assign defaults', function(){
+    it.skip('should accept values and assign defaults', function () {
       var bot = new Bot(
         {
           networks: [{
@@ -103,7 +103,7 @@ describe('Bot', function(){
       assert.equal(bot.config.defaults.quit_message, 'KwirK, a fancy IRC bot');
     });
 
-    it.skip('should have an array of network objects', function(){
+    it.skip('should have an array of network objects', function () {
       var bot = new Bot(
         {
           networks: [{
@@ -119,7 +119,7 @@ describe('Bot', function(){
             network: 'undernet',
             enable: false,
             servers: [{
-                host: 'ix2.undernet.org',
+              host: 'ix2.undernet.org',
             },
             {
               host: 'chicago.il.us.undernet.org',
@@ -133,13 +133,15 @@ describe('Bot', function(){
                 city: 'Chicago'
               }
             }
-          ]}
-        ]}
+            ]
+          }
+          ]
+        }
       );
 
       assert.equal(bot.networks.length, 2);
 
-      bot.networks.forEach(function(network){
+      bot.networks.forEach(function (network) {
         assert.equal(network instanceof Network, true);
       });
     });
