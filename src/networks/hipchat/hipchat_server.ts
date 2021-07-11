@@ -1,4 +1,5 @@
-import { Server, IServer, IServerOptions } from '../base/server';
+import { IServer, IServerOptions } from '../interfaces';
+import { Server } from '../base/server';
 import { HipChat } from './hipchat';
 
 export class HipChatServer extends Server<HipChat> implements IHipChatServer {
@@ -11,8 +12,6 @@ export class HipChatServer extends Server<HipChat> implements IHipChatServer {
   public dispose(): void {}
 }
 
-export interface IHipChatServer
-  extends IServer<HipChat>,
-    IHipChatServerOptions {}
+export interface IHipChatServer extends IServer<HipChat>, IHipChatServerOptions {}
 
 export interface IHipChatServerOptions extends IServerOptions {}

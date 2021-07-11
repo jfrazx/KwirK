@@ -1,20 +1,24 @@
-import { AnyNet, IAnyNet, NetFactory } from './networks/netfactory';
-import { Network } from './networks/base/network';
-import { EventEmitter } from './utilities/events';
-import { Server } from './networks/base/server';
-import { Logger } from './utilities/logger';
-import { Router } from './messaging/router';
-import { Timer } from './utilities/timer';
-const Color = require('./utilities/color');
-import * as _ from './utilities/lodash';
+import { INetwork, Network, Server, INetworkOptions } from '@kwirk/networks';
+import { NetworkRuleRunner, NetworkRuleConstructor } from '../rules';
+import { EventEmitter } from '../utilities/events';
+import { AnyNet } from '../networks/netfactory';
+import { EventEmitter2 } from 'eventemitter2';
+import { Logger } from '../utilities/logger';
+import { Router } from '../messaging/router';
+import { Timer } from '../utilities/timer';
+import { asArray } from '@jfrazx/asarray';
+import * as _ from '../utilities/lodash';
+import * as winston from 'winston';
+
+const Color = require('../utilities/color');
 
 Color.global();
 
 export class Bot extends EventEmitter implements IBot {
   public network: { [network: string]: AnyNet } = Object.create(null);
   public timers: { [network: string]: Timer[] } = Object.create(null);
+  public router: Router = new Router(this);
   public Logger = Logger;
-  public router: Router;
   public Timer = Timer;
 
   private static _instance: Bot;
@@ -39,8 +43,14 @@ export class Bot extends EventEmitter implements IBot {
     });
 
     this.setupListeners();
+  }
 
-    this.router = new Router(this);
+  registerNetworkRule<T extends INetwork, O extends INetworkOptions>(
+    RuleConstructor: NetworkRuleConstructor<T, O> | NetworkRuleConstructor<T, O>[],
+  ) {
+    asArray(RuleConstructor).forEach((rule) => NetworkRuleRunner.register(rule));
+
+    return this;
   }
 
   /**
@@ -75,14 +85,14 @@ export class Bot extends EventEmitter implements IBot {
 
   /**
    * Add a new network to the bot
-   * @param <IAnyNet> netinfo: The network configuration information
+   * @param <IAnyNet> networkOptions: The network configuration information
    * @param <Function> callback: Optional callback to perform after network add
    * <> @param <Error> err: Error to return or null
    * <> @param <AnyNet> network: The newly created network object
    * @return <Bot>
    */
-  public addNetwork(netinfo: AnyNet | IAnyNet, callback?: Function): Bot {
-    const network = this.createNetwork(netinfo);
+  public addNetwork<T extends INetworkOptions>(networkOptions: T, callback?: Function): IBot {
+    const network = this.createNetwork(networkOptions);
     let error: Error = null;
 
     if (this.networkExists(network.name)) {
@@ -98,8 +108,8 @@ export class Bot extends EventEmitter implements IBot {
     return this;
   }
 
-  private createNetwork(network: IAnyNet | AnyNet): AnyNet {
-    return network instanceof Network ? network : NetFactory.create(this, network);
+  private createNetwork<T extends INetworkOptions>(networkOptions: T): AnyNet {
+    return NetworkRuleRunner.create(this, networkOptions);
   }
 
   /**
@@ -116,7 +126,7 @@ export class Bot extends EventEmitter implements IBot {
    * @param <AnyNet> network: The network to remove
    * @return <Bot>
    */
-  public removeNetwork(network: AnyNet, callback?: Function): Bot {
+  public removeNetwork(network: AnyNet, callback?: Function): IBot {
     if (this.networkExists(network.name)) {
       this.emit('removing network', network.name);
       this.Logger.info('Removing network ' + network.name);
@@ -154,14 +164,14 @@ export class Bot extends EventEmitter implements IBot {
    * @param <string> network: The name of the network to clear timers
    * @return <Bot>
    */
-  public clearTimers(network?: string): Bot {
+  public clearTimers(network?: string): IBot {
     const networks = network ? [this.network[network]] : Object.values(this.network);
 
     for (const network of networks) {
       network.clearTimers();
     }
 
-    return this;
+    return this as IBot;
   }
 
   /**
@@ -269,20 +279,29 @@ export class Bot extends EventEmitter implements IBot {
     );
   }
 
-  public static bot(): Bot {
+  public static bot(): IBot {
     if (this._instance) return this._instance;
     return new Bot();
   }
 }
 
-export interface IBot {
+export interface IBot extends EventEmitter2 {
   network: { [network: string]: AnyNet };
+  Logger: typeof winston;
+  Timer: typeof Timer;
+  router: Router;
 
-  addNetwork(nets: IAnyNet, callback?: Function): Bot;
+  timers: { [network: string]: Timer[] };
+
+  addNetwork<T extends INetworkOptions>(networkOptions: T, callback?: Function): IBot;
   getNetwork(network: string): AnyNet;
   networkExists(network: AnyNet): boolean;
   networkExists(name: string): boolean;
   removeNetwork(network: AnyNet, callback?: Function): void;
+
+  registerNetworkRule<T extends INetwork, O extends INetworkOptions>(
+    RuleConstructor: NetworkRuleConstructor<T, O> | NetworkRuleConstructor<T, O>[],
+  ): IBot;
 
   start(network?: AnyNet): void;
   stop(network: AnyNet): void;

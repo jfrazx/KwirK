@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "baseUrl": "./src",
     "module": "commonjs",
     "target": "esnext",
     "noImplicitAny": true,
@@ -10,7 +11,13 @@
     "outDir": "build",
     "lib": ["esnext"],
     "typeRoots": ["node_modules/@types"],
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "paths": {
+      "@kwirk/interfaces": ["./src/interfaces/"],
+      "@kwirk/networks": ["./src/networks/"],
+      "@kwirk/options": ["./src/options/"],
+      "@kwirk/bot": ["./src/bot/"]
+    }
   },
   "compileOnSave": false,
   "include": ["src"],

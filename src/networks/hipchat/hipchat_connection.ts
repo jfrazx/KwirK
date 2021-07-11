@@ -1,10 +1,11 @@
-import { Connection, IConnection } from '../base/connection';
 import { HipChatServer } from './hipchat_server';
+import { IConnection } from '../interfaces';
+import { Connection } from '../base';
 import { HipChat } from './hipchat';
-import * as https from 'https';
 
-export class HipChatConnection extends Connection<HipChat>
-  implements IHipChatConnection {
+export class HipChatConnection extends Connection<HipChat> implements IHipChatConnection {
+  public server: HipChatServer;
+
   constructor(public network: HipChat) {
     super(network);
   }

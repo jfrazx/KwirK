@@ -1,10 +1,11 @@
-import { Connection, IConnection } from '../base/connection';
 import { SlackServer } from './slack_server';
+import { IConnection } from '../interfaces';
+import { Connection } from '../base';
 import { Slack } from './slack';
-import * as https from 'https';
 
-export class SlackConnection extends Connection<Slack>
-  implements ISlackConnection {
+export class SlackConnection extends Connection<Slack> implements ISlackConnection {
+  public server: SlackServer;
+
   constructor(public network: Slack) {
     super(network);
   }

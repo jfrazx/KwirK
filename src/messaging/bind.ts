@@ -1,7 +1,7 @@
-import { Network } from '../networks/base/network';
 import { AnyNet } from '../networks/netfactory';
+import { INetwork } from '@kwirk/networks';
 import { Message } from './message';
-import { Bot } from '../bot';
+import { IBot } from '@kwirk/bot';
 import * as _ from 'lodash';
 
 export class Bind implements IBind {
@@ -27,7 +27,7 @@ export class Bind implements IBind {
   private maps: Function[] = [];
   private _prefix_source: boolean;
 
-  constructor(private bot: Bot, opts: BindOptions, inherit: boolean = false) {
+  constructor(private bot: IBot, opts: BindOptions, inherit: boolean = false) {
     this.validate(opts);
 
     this.active = opts.active === void 0 ? true : Boolean(opts.active);
@@ -39,22 +39,11 @@ export class Bind implements IBind {
       };
     }
 
-    // if a binding already exists, remove it
     if (
-      Bind.exists(
-        opts.source_network,
-        opts.source_channel,
-        opts.target_network,
-        opts.target_channel,
-      )
+      Bind.exists(opts.source_network, opts.source_channel, opts.target_network, opts.target_channel)
     ) {
       Bind.removeBind(
-        Bind.find(
-          opts.source_network,
-          opts.source_channel,
-          opts.target_network,
-          opts.target_channel,
-        ),
+        Bind.find(opts.source_network, opts.source_channel, opts.target_network, opts.target_channel),
       );
     }
 
@@ -64,10 +53,8 @@ export class Bind implements IBind {
     this.target = opts.target_channel;
 
     this.duplex = opts.duplex === void 0 ? true : Boolean(opts.duplex);
-    this.unrestricted =
-      opts.unrestricted === void 0 ? true : Boolean(opts.unrestricted);
-    this.prefix_source =
-      opts.prefix_source === void 0 ? false : Boolean(opts.prefix_source);
+    this.unrestricted = opts.unrestricted === void 0 ? true : Boolean(opts.unrestricted);
+    this.prefix_source = opts.prefix_source === void 0 ? false : Boolean(opts.prefix_source);
     this.prefix = opts.prefix || this.prefix || '';
 
     this.bot.Logger.info(
@@ -77,10 +64,7 @@ export class Bind implements IBind {
     Bind.binds[this.network].binds.push(this);
 
     // create the opposing bind if it does not exist
-    if (
-      this.duplex &&
-      !Bind.exists(this.destination, this.target, this.network, this.channel)
-    ) {
+    if (this.duplex && !Bind.exists(this.destination, this.target, this.network, this.channel)) {
       this.createOpposing(inherit);
     }
   }
@@ -92,14 +76,7 @@ export class Bind implements IBind {
    */
   opposing(inherit: boolean = false): Bind {
     let bind: Bind;
-    if (
-      !(bind = Bind.find(
-        this.destination,
-        this.target,
-        this.network,
-        this.channel,
-      ))
-    )
+    if (!(bind = Bind.find(this.destination, this.target, this.network, this.channel)))
       bind = this.createOpposing(inherit);
 
     return bind;
@@ -111,8 +88,7 @@ export class Bind implements IBind {
    * @return <Bind>
    */
   accept(callback: Function): Bind {
-    if (typeof callback !== 'function')
-      throw new Error('You must pass a function to accept');
+    if (typeof callback !== 'function') throw new Error('You must pass a function to accept');
 
     this.accepts.push(callback);
 
@@ -125,8 +101,7 @@ export class Bind implements IBind {
    * @return <Bind>
    */
   reject(callback: Function): Bind {
-    if (typeof callback !== 'function')
-      throw new Error('You must pass a function to reject');
+    if (typeof callback !== 'function') throw new Error('You must pass a function to reject');
 
     this.rejects.push(callback);
 
@@ -139,8 +114,7 @@ export class Bind implements IBind {
    * @return <Bind>
    */
   map(callback: Function): Bind {
-    if (typeof callback !== 'function')
-      throw new Error('You must pass a function to map');
+    if (typeof callback !== 'function') throw new Error('You must pass a function to map');
 
     this.maps.push(callback);
 
@@ -153,18 +127,18 @@ export class Bind implements IBind {
    * @return <Message>
    * @todo return a response object
    */
-  match<N extends Network>(message: Message<N>): Message<N> {
+  match<N extends INetwork>(message: Message<N>): Message<N> {
     let matched: any;
     try {
       if (
-        (matched = _.some(this.rejects, callback => {
+        (matched = _.some(this.rejects, (callback) => {
           return callback.call(null, message);
         }))
       ) {
         return undefined;
       }
 
-      matched = _.some(this.accepts, callback => {
+      matched = _.some(this.accepts, (callback) => {
         return callback.call(null, message);
       });
     } catch (e) {
@@ -175,11 +149,7 @@ export class Bind implements IBind {
       return;
     }
 
-    if (
-      matched ||
-      (!this.rejects.length && !this.accepts.length) ||
-      this.unrestricted
-    )
+    if (matched || (!this.rejects.length && !this.accepts.length) || this.unrestricted)
       return this.transform(message);
   }
 
@@ -284,12 +254,12 @@ export class Bind implements IBind {
    * @param <Message> message: The message to transform
    * @return <Message>
    */
-  private transform<N extends Network>(message: Message<N>): Message<N> {
+  private transform<N extends INetwork>(message: Message<N>): Message<N> {
     let msg = Object.create(Object.getPrototypeOf(message));
 
     Object.assign(msg, message);
 
-    _.each(this.maps, callback => {
+    _.each(this.maps, (callback) => {
       callback.call(null, msg);
     });
 
@@ -297,23 +267,13 @@ export class Bind implements IBind {
   }
 
   private validate(opts: BindOptions): void {
-    [
-      'source_network',
-      'source_channel',
-      'target_network',
-      'target_channel',
-    ].forEach(prop => {
+    ['source_network', 'source_channel', 'target_network', 'target_channel'].forEach((prop) => {
       if (!opts[prop] || !(<string>opts[prop]).trim()) {
-        throw new Error(
-          `a ${prop.replace(/_/, ' ')} must be defined for binding`,
-        );
+        throw new Error(`a ${prop.replace(/_/, ' ')} must be defined for binding`);
       }
     });
 
-    if (
-      opts.source_network === opts.target_network &&
-      opts.source_channel === opts.target_channel
-    ) {
+    if (opts.source_network === opts.target_network && opts.source_channel === opts.target_channel) {
       throw new Error('the target must not be the source');
     }
   }
@@ -338,12 +298,7 @@ export class Bind implements IBind {
    * @returns {boolean}
    * @memberof Bind
    */
-  static exists(
-    network: string,
-    channel: string,
-    destination: string,
-    target: string,
-  ): boolean {
+  static exists(network: string, channel: string, destination: string, target: string): boolean {
     return Boolean(this.find(network, channel, destination, target));
   }
 
@@ -356,12 +311,7 @@ export class Bind implements IBind {
    * @memberof Bind
    */
   static oppositeExists(bind: Bind): boolean {
-    return this.exists(
-      bind.destination,
-      bind.target,
-      bind.network,
-      bind.channel,
-    );
+    return this.exists(bind.destination, bind.target, bind.network, bind.channel);
   }
 
   /**
@@ -375,14 +325,9 @@ export class Bind implements IBind {
    * @returns {Bind}
    * @memberof Bind
    */
-  static find(
-    network: string,
-    channel: string,
-    destination: string,
-    target: string,
-  ): Bind {
+  static find(network: string, channel: string, destination: string, target: string): Bind {
     if (this.binds[network]) {
-      return this.binds[network].binds.find(binding => {
+      return this.binds[network].binds.find((binding) => {
         return (
           binding.network === network &&
           binding.channel === channel &&
@@ -403,18 +348,8 @@ export class Bind implements IBind {
    * @static
    */
   static removeBind(bind: Bind): Bind;
-  static removeBind(
-    network: string,
-    channel: string,
-    destination: string,
-    target: string,
-  ): Bind;
-  static removeBind(
-    network: any,
-    channel?: string,
-    destination?: string,
-    target?: string,
-  ): Bind {
+  static removeBind(network: string, channel: string, destination: string, target: string): Bind;
+  static removeBind(network: any, channel?: string, destination?: string, target?: string): Bind {
     if (network === undefined) return;
 
     if (network instanceof Bind) {

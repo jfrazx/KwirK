@@ -1,5 +1,6 @@
-import { User, IUser, IUserOptions } from '../base/user';
+import { IUser, IUserOptions } from '../interfaces';
 import { Slack } from './slack';
+import { User } from '../base';
 
 export class SlackUser extends User<Slack> implements ISlackUser {
   constructor(network: Slack, options: ISlackUserOptions) {

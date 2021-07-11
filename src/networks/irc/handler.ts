@@ -13,14 +13,10 @@ export class Handler {
       try {
         this.network.bot.on(event, (this as any)[listener].bind(this));
       } catch (e) {
-        this.network.bot.Logger.warn(
-          `IRC Constant ${listener} defined with no handler`,
-        );
+        this.network.bot.Logger.warn(`IRC Constant ${listener} defined with no handler`);
 
         this.network.bot.on(event, (message: any) => {
-          this.network.bot.Logger.warn(
-            `IRC Constant event ${message.command} occured with no handler`,
-          );
+          this.network.bot.Logger.warn(`IRC Constant event ${message.command} occured with no handler`);
         });
       }
     });
@@ -54,10 +50,7 @@ export class Handler {
   public UNKNOWN(message: any): void {
     if (!message.command) return;
 
-    this.network.bot.Logger.warn(
-      `Unhandled command ${message.command}`,
-      _.omit(message, ['network']),
-    );
+    this.network.bot.Logger.warn(`Unhandled command ${message.command}`, _.omit(message, ['network']));
   }
 
   public RPL_WELCOME(message: any): void {
@@ -67,122 +60,88 @@ export class Handler {
 
   public ERR_NOSUCHNICK(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOSUCHSERVER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOSUCHCHANNEL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_CANNOTSENDTOCHAN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_TOOMANYCHANNELS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_WASNOSUCHNICK(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_TOOMANYTARGETS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOORIGIN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NORECIPIENT(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOTEXTTOSEND(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOTOPLEVEL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_WILDTOPLEVEL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_UNKNOWNCOMMAND(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
   public ERR_NOADMININFO(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_FILEERROR(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NONICKNAMEGIVEN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_ERRONEUSNICKNAME(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
@@ -212,358 +171,258 @@ export class Handler {
 
   public ERR_NICKCOLLISION(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_USERNOTINCHANNEL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOTONCHANNEL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_USERONCHANNEL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOLOGIN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_SUMMONDISABLED(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_USERSDISABLED(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOTREGISTERED(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NEEDMOREPARAMS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_ALREADYREGISTRED(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOPERMFORHOST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_PASSWDMISMATCH(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_YOUREBANNEDCREEP(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_KEYSET(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_CHANNELISFULL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_UNKNOWNMODE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_INVITEONLYCHAN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_BANNEDFROMCHAN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_BADCHANNELKEY(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOPRIVILEGES(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_CHANOPRIVSNEEDED(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_CANTKILLSERVER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_NOOPERHOST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_UMODEUNKNOWNFLAG(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_USERSDONTMATCH(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_NONE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_USERHOST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ISON(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_AWAY(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_UNAWAY(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_NOWAWAY(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_WHOISUSER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_WHOISSERVER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_WHOISOPERATOR(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_WHOISIDLE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFWHOIS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_WHOISCHANNELS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_WHOWASUSER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFWHOWAS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LISTSTART(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LIST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LISTEND(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_CHANNELMODEIS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_NOTOPIC(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
   public RPL_TOPIC(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
   public RPL_INVITING(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
   public RPL_SUMMONING(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
   public RPL_VERSION(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
   public RPL_WHOREPLY(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
   public RPL_ENDOFWHO(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
@@ -582,9 +441,7 @@ export class Handler {
 
   public RPL_WHOSPCRPL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
@@ -593,44 +450,32 @@ export class Handler {
   }
   public RPL_LINKS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFLINKS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_BANLIST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFBANLIST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_INFO(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFINFO(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
@@ -652,368 +497,262 @@ export class Handler {
   public RPL_ENDOFMOTD(message: any): void {
     Object.freeze(this.network.ircd.motd);
 
-    this.network.bot.emit(
-      `MOTD::${this.network.name}`,
-      this.network,
-      this.network.ircd.motd,
-    );
+    this.network.bot.emit(`MOTD::${this.network.name}`, this.network, this.network.ircd.motd);
   }
 
   public RPL_YOUREOPER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_REHASHING(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_QLIST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFQLIST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TIME(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_USERSSTART(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_USERS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFUSERS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_NOUSERS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACELINK(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACECONNECTING(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACEHANDSHAKE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACEUNKNOWN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACEOPERATOR(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACEUSER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACESERVER(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACENEWTYPE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_TRACELOG(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSLINKINFO(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSCOMMANDS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSCLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSNLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSILINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSKLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSYLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFSTATS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSLLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSUPTIME(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSOLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_STATSHLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_UMODEIS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LUSERCLIENT(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LUSEROP(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LUSERUNKNOWN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LUSERCHANNELS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_LUSERME(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ADMINME(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ADMINLOC1(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ADMINLOC2(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ADMINEMAIL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_MONONLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_MONOFFLINE(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_MONLIST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_ENDOFMONLIST(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public ERR_MONLISTFULL(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_SASLLOGIN(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_SASLSUCCESS(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_SASLFAILED(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_SASLERROR(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_SASLABORT(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
   public RPL_SASLALREADYAUTH(message: any): void {
     this.network.bot.Logger.warn(
-      'IRC Constant ' +
-        (IRC as any)[message.command] +
-        ' handler defined with no implementation',
+      'IRC Constant ' + (IRC as any)[message.command] + ' handler defined with no implementation',
     );
   }
 
@@ -1035,9 +774,7 @@ export class Handler {
   }
 
   CAP(message: any): void {
-    let capabilities = message.params[message.params.length - 1]
-      .replace(/(?:^| )[\-~=]/, '')
-      .split(' ');
+    let capabilities = message.params[message.params.length - 1].replace(/(?:^| )[\-~=]/, '').split(' ');
 
     if (!this.network.sasl) {
       _.remove(capabilities, (cap) => cap === 'sasl');
@@ -1124,7 +861,7 @@ export class Handler {
    * @return <void>
    * @todo change this to not use Message, its an event...
    */
-  private JOIN(message: any): void {
+  protected JOIN(message: any): void {
     let msg: Message<Irc>, nick: string, ident: string, hostname: string;
 
     message.channel = this.network.addChannel({ name: message.params[0] });
@@ -1240,11 +977,9 @@ export class Handler {
     console.log('ctcp', match);
   }
 
-  private MODE(message: Message<Irc>): void {
+  protected MODE(message: Message<Irc>): void {
     this.network.bot.Logger.warn(
-      `IRC Constant ${
-        (IRC as any)[message.command]
-      } handler defined with no implementation`,
+      `IRC Constant ${(IRC as any)[message.command]} handler defined with no implementation`,
     );
   }
 }

@@ -1,5 +1,6 @@
-import { User, IUser, IUserOptions } from '../base/user';
+import { IUser, IUserOptions } from '../interfaces';
 import { HipChat } from './hipchat';
+import { User } from '../base';
 
 export class HipChatUser extends User<HipChat> implements IHipChatUser {
   constructor(network: HipChat, options: IHipChatUserOptions) {

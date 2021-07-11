@@ -1,4 +1,3 @@
-
 # KwirK
 
 KwirK aims to be a sophisticated, multi-network, multi-protocol utility bot that can
@@ -9,30 +8,30 @@ act as a bridge between popular services.
 
 ## Goals
 
-- support multiple chat protocols  
-- IRC is the current focus with Slack and HipChat next on the list  
-- link channels on the different networks  (IRC<->IRC is alpha)
-- transparent channel encryption with Diffie-Hellman key exchange  
-- http administrative front-end and client area  
-- ability to link multiple bots  
+- support multiple chat protocols
+- IRC is the current focus with Slack and HipChat next on the list
+- link channels on the different networks (IRC<->IRC is alpha)
+- transparent channel encryption with Diffie-Hellman key exchange
+- http administrative front-end and client area
+- ability to link multiple bots
 - more secure, eggdrop like command console
-- plugin system  
+- plugin system
 - translation, in channel, channel to channel, and pm to pm as proxy
-- much more, this list will certainly expand  
+- much more, this list will certainly expand
 
 ## Installation
 
 npm install kwirk [--save]
 
-or  
+or
 
 clone the repo: git clone https://github.com/jfrazx/KwirK/
 
-If you haven't setup your environment:  
+If you haven't setup your environment:
 
 npm install -g typescript typings
 
-npm install  
+npm install
 
 ## Functionality
 
@@ -41,9 +40,10 @@ Emitted events will (eventually) be catalogued appropriately. In the interim tak
 IRC to IRC binding appears to be working well.
 
 ## Example
+
 ```javascript
-var Kwirk    = require( 'kwirk' )
-  , bot      = new Kwirk.Bot();
+var Kwirk = require('kwirk'),
+  bot = new Kwirk.Bot();
 
 var freenode = {
   type: 'irc',
@@ -51,21 +51,21 @@ var freenode = {
   servers: [
     {
       host: 'adams.freenode.net',
-      port: 7000,   // defaults to 6667
-      ssl: true,    // default to false
-      enable: false // defaults to true
+      port: 7000, // defaults to 6667
+      ssl: true, // default to false
+      enable: false, // defaults to true
     },
     {
       host: 'asimov.freenode.net',
       port: 7000,
-      ssl: true
-    }
+      ssl: true,
+    },
   ],
   channels: [
     {
       name: '#bot-playground',
-    }
-  ]
+    },
+  ],
 };
 
 var efnet = {
@@ -77,60 +77,60 @@ var efnet = {
     },
     {
       host: 'irc.swepipe.se',
-    }
+    },
   ],
   channels: [
     {
       name: '#kwirk',
-    }
+    },
   ],
-  nick: 'KwirKBot',      // defaults to 'kwirk'
-}
+  nick: 'KwirKBot', // defaults to 'kwirk'
+};
 
 var server = {
   host: 'irc.choopa.net',
   port: 9999,
-  ssl: true
+  ssl: true,
 };
 
-bot
-.addNetwork( freenode )
-.addNetwork( efnet, function( err, network ) {
-  network.addServer( server, function( err, server ) {
+bot.addNetwork(freenode).addNetwork(efnet, function (err, network) {
+  network.addServer(server, function (err, server) {
     server.disable();
   });
 });
 
 // this is binding to the efnet network and the #kwirk channel
-bot.network['efnet'].bind({
-  source_channel: '#kwirk',
-  // the target will be freenode network and the #bot-playground channel
-  target_network: 'freenode',
-  target_channel: '#bot-playground',
-  prefix_source: true
-})
+bot.network['efnet']
+  .bind({
+    source_channel: '#kwirk',
+    // the target will be freenode network and the #bot-playground channel
+    target_network: 'freenode',
+    target_channel: '#bot-playground',
+    prefix_source: true,
+  })
 
-// reject, accept and map will all be passed a message object
-.reject( function( message ) {
-  return message.content.match(/^\+?!\w+/);
-})
-// opposing bind will be created, true value will inherit rejects, accepts and maps
-.opposing( true )
-.prefix_source = false;
+  // reject, accept and map will all be passed a message object
+  .reject(function (message) {
+    return message.content.match(/^\+?!\w+/);
+  })
+  // opposing bind will be created, true value will inherit rejects, accepts and maps
+  .opposing(true).prefix_source = false;
 
 bot.start();
-
 ```
+
 ## Contributing
 
 1. Fork it ( https://github.com/jfrazx/KwirK/fork )
 2. Adhere to naming conventions (transition in progress)
-  - Indentation is two (2) spaces
-  - File name to match Object/Class name in lowercase and underscored (irc_server.ts for IrcServer)
-  - Treat acronyms in object names as words (Irc instead of IRC)
-  - Variables to be snake case: lowercase, _ delimited words (my_var)
-  - Function names to be camelCase, starting with lowercase (myFunction)
-  - Class names to be PascalCase, starting with uppercase (MyClass)
+
+- Indentation is two (2) spaces
+- File name to match Object/Class name in lowercase and underscored (irc_server.ts for IrcServer)
+- Treat acronyms in object names as words (Irc instead of IRC)
+- Variables to be snake case: lowercase, \_ delimited words (my_var)
+- Function names to be camelCase, starting with lowercase (myFunction)
+- Class names to be PascalCase, starting with uppercase (MyClass)
+
 3. Create your feature branch (git checkout -b my-new-feature)
 4. Commit your changes (git commit -am 'Add some feature')
 5. Push to the branch (git push origin my-new-feature)

@@ -1,4 +1,4 @@
-import { Network, INetwork, INetOptions, INetworkOptions } from '../base/network';
+import { INetwork, INetOptions, INetworkOptions } from '../interfaces';
 import { IrcChannel, IIrcChannelOptions } from './irc_channel';
 import { IrcServer, IIrcServerOptions } from './irc_server';
 import { IrcUser, IIrcUserOptions } from './irc_user';
@@ -6,21 +6,22 @@ import { IrcServersList } from './irc_servers_list';
 import { IrcConnection } from './irc_connection';
 import { UsersList } from '../base/users_list';
 import { Timer } from '../../utilities/timer';
+import { Options } from '@kwirk/options';
 import { AnyNet } from '../netfactory';
 import { ISasl } from './sasl/sasl';
-import { Bot } from '../../bot';
+import { Network } from '../base';
+import { IBot } from '@kwirk/bot';
 import { Ircd } from './ircd';
 import * as _ from 'lodash';
 
-export class Irc extends Network implements IIRC {
+export class Irc extends Network<IIRC, IRCOptions> implements IIRC {
+  private static readonly DEFAULT_DISABLE = 180000;
+
   public serverList: IrcServersList;
   public channels: IrcChannel[] = [];
   public channel: { [chan: string]: IrcChannel } = {};
   public connection: IrcConnection;
-  public connection_attempts: number;
   public ircd: Ircd;
-  public name: string;
-  public nick: string;
   public alt_nick: string;
   public quit_message: string;
   public encoding: string;
@@ -29,7 +30,6 @@ export class Irc extends Network implements IIRC {
   public user_name: string;
   public real_name: string;
   public modes: string[];
-  public options: IIrcOptions;
   public sasl: ISasl;
   public use_ping_timer: boolean;
   public reg_listen: string;
@@ -40,18 +40,8 @@ export class Irc extends Network implements IIRC {
   private auto_disable_interval = Irc.DEFAULT_DISABLE;
   private auto_disable_times = 0;
 
-  private static readonly DEFAULT_DISABLE = 180000;
-
-  /**
-   * @param <Bot> bot: The bot!!!
-   * @param <IIrcOptions> options: Options for configuring this network type
-   */
-  constructor(bot: Bot, options: IIrcOptions) {
+  constructor(bot: IBot, public options: Options<IIrcOptions>) {
     super(bot, options);
-
-    this.options = _.defaults(options, this.defaults());
-
-    _.merge(this, _.omit(this.options, ['enable', 'servers', 'channels', 'name']));
 
     this.serverList = new IrcServersList(this, this.options.servers);
     this.users_list = new UsersList<Irc, IrcUser>(this, IrcUser);
@@ -288,8 +278,7 @@ export class Irc extends Network implements IIRC {
   private setDisableTimer(): void {
     this.disable();
     this.auto_disable_interval =
-      this.auto_disable_interval * ++this.auto_disable_times ||
-      this.auto_disable_interval;
+      this.auto_disable_interval * ++this.auto_disable_times || this.auto_disable_interval;
 
     this.bot.Logger.warn(
       `no servers enabled, starting auto disabled timer for ${Math.round(
@@ -319,14 +308,12 @@ export class Irc extends Network implements IIRC {
   }
 
   /**
-   * Check if servers are available after network is autodisabled
+   * Check if servers are available after network is auto-disabled
    * @param <Function> done: The function to call once the checking is complete
    * @private
    */
   private disableCheck(done: Function): void {
-    this.bot.Logger.info(
-      `auto disabled timer invoked network server enabling: ${this.name}`,
-    );
+    this.bot.Logger.info(`auto disabled timer invoked network server enabling: ${this.name}`);
 
     this.enable();
     this.serverList.enableAll();
@@ -364,43 +351,14 @@ export class Irc extends Network implements IIRC {
     this.auto_disable_times = 0;
     this.auto_disable_interval = Irc.DEFAULT_DISABLE;
 
-    this.connection_attempts = this.options.connection_attempts;
+    this.connectionAttempts = this.options.connectionAttempts;
     // perform on registered events, but for now lets try to make the bot join a channel
     Object.entries(this.channel).forEach(([_, channel]) => channel.join());
   }
-
-  /**
-   * Default network options
-   * @return <IIrcOptions>
-   */
-  private defaults(): IIrcOptions {
-    return {
-      connection_attempts: 10,
-      encoding: 'utf8',
-      enable: true,
-      nick: 'kwirk',
-      alt_nick: 'kw?rk',
-      real_name: 'KwirK IRC Bot',
-      user_name: 'KwirK',
-      password: null,
-      modes: ['i'], // user modes, not channel modes
-      owner: '',
-      trigger: '!',
-      quit_message: 'KwirK, a sophisticated utility bot',
-      reject_invalid_certs: false,
-      sasl: null,
-      servers: [],
-      channels: [],
-      name: null,
-      use_ping_timer: false,
-      ping_delay: 120000,
-      reg_listen: null,
-    };
-  }
 }
 
-export interface IIRC extends IRCOptions, INetwork {
-  options: IIrcOptions;
+export interface IIRC extends INetwork {
+  options: Options<IRCOptions>;
   serverList: IrcServersList;
   users_list: UsersList<Irc, IrcUser>;
 

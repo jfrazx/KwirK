@@ -2,11 +2,13 @@
  * An example of a very basic IRC bot
  */
 
+import { IrcRule } from '../src/rules';
 import { Bot } from '../src/bot';
 
 const bot = new Bot();
 
 bot
+  .registerNetworkRule(IrcRule)
   .addNetwork({
     type: 'irc',
     name: 'freenode',

@@ -1,6 +1,7 @@
 import { IrcServer, IIrcServerOptions } from './irc_server';
 import * as _ from '../../utilities/lodash';
 import { Irc } from './irc';
+import { OptionsContainer } from '../../options';
 
 export class IrcServersList {
   private servers: IrcServer[] = [];
@@ -19,11 +20,9 @@ export class IrcServersList {
    * @param <IServer> serve: The options for configuring the new server
    * @return <void>
    */
-  public addServer(
-    serverOptions: IIrcServerOptions,
-    callback?: Function,
-  ): IrcServersList {
-    const server = new IrcServer(this.network, serverOptions);
+  public addServer(serverOptions: IIrcServerOptions, callback?: Function): IrcServersList {
+    const options = OptionsContainer.create(serverOptions);
+    const server = new IrcServer(this.network, options);
 
     this.servers.push(server);
 
@@ -40,9 +39,7 @@ export class IrcServersList {
   public serverExists(host: string | IrcServer): boolean {
     const instance = host instanceof IrcServer;
 
-    return Boolean(
-      this.servers.find((server) => host === (instance ? server.host : server)),
-    );
+    return Boolean(this.servers.find((server) => host === (instance ? server.host : server)));
   }
 
   /**
@@ -51,9 +48,7 @@ export class IrcServersList {
    * @return <IrcServer>
    */
   public removeServerByHost(host: string): IrcServer {
-    return this.removeServer(
-      this.servers.find((server) => server.host === host),
-    );
+    return this.removeServer(this.servers.find((server) => server.host === host));
   }
 
   /**
@@ -94,10 +89,7 @@ export class IrcServersList {
   }
 
   private nextServer(index: number = this._index): IrcServer {
-    index =
-      Number.isInteger(index) && _.inRange(index, 0, this.servers.length)
-        ? index
-        : this._index;
+    index = Number.isInteger(index) && _.inRange(index, 0, this.servers.length) ? index : this._index;
 
     this._index = (this._index + 1) % this.servers.length || 0;
 
@@ -117,13 +109,7 @@ export class IrcServersList {
       'remove_server_by_host::' + this.network.name,
       this.removeServerByHost.bind(this),
     );
-    this.network.bot.on(
-      'remove_server::' + this.network.name,
-      this.removeServer.bind(this),
-    );
-    this.network.bot.on(
-      'add_server::' + this.network.name,
-      this.addServer.bind(this),
-    );
+    this.network.bot.on('remove_server::' + this.network.name, this.removeServer.bind(this));
+    this.network.bot.on('add_server::' + this.network.name, this.addServer.bind(this));
   }
 }

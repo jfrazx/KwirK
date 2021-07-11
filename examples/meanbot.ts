@@ -2,6 +2,7 @@
  * Demonstrate how to add an event listener for an evil bot
  */
 import { Bot } from '../src';
+import { IrcRule } from '../src/rules';
 import { Message } from '../src/messaging/message';
 import { Irc, IrcChannel, IrcUser } from '../src/networks';
 
@@ -51,8 +52,8 @@ const undernet = {
   ping_delay: 30000,
 };
 
-// add network
 bot
+  .registerNetworkRule(IrcRule)
   .addNetwork(undernet)
   .addNetwork(freenode)
   // listen for a message from any network
@@ -81,9 +82,7 @@ bot
     // someone left
     else if (message.part()) {
       // no need to check if it's the bot that parted, it will not send to channel if it's not on it
-      message.target.say(
-        `Good riddance! We didn't want ${message.nick} in here anyway!`,
-      );
+      message.target.say(`Good riddance! We didn't want ${message.nick} in here anyway!`);
     }
     // or perhaps an action
     else if (message.action()) {

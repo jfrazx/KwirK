@@ -1,9 +1,7 @@
-import { Channel } from '../networks/base/channel';
-import { Network } from '../networks/base/network';
-import { User } from '../networks/base/user';
+import { Channel, INetwork, User } from '@kwirk/networks';
 import { Bind } from './bind';
 
-export class Message<N extends Network> implements IMessage<N> {
+export class Message<N extends INetwork> implements IMessage<N> {
   public network: N;
   public channel: Channel<N>;
   public user: User<N>;
@@ -31,7 +29,7 @@ export class Message<N extends Network> implements IMessage<N> {
     this.command = message.command;
     this.events = ['catchall'];
 
-    this.type = this.network.type;
+    this.type = this.network.options.type;
 
     /**
      * keep the original data
@@ -129,7 +127,7 @@ export class Message<N extends Network> implements IMessage<N> {
   }
 }
 
-export interface IMessage<N extends Network> extends MessageOptions<N> {
+export interface IMessage<N extends INetwork> extends MessageOptions<N> {
   bind: Bind;
   content: string;
   events: string[];
@@ -147,11 +145,11 @@ export interface IMessage<N extends Network> extends MessageOptions<N> {
   public(): boolean;
 }
 
-export interface IMessageOptions<N extends Network> extends MessageOptions<N> {
+export interface IMessageOptions<N extends INetwork> extends MessageOptions<N> {
   message?: string;
 }
 
-export interface MessageOptions<N extends Network> {
+export interface MessageOptions<N extends INetwork> {
   network: N;
   channel: Channel<N>;
   user: User<N>;

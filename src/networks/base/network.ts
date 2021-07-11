@@ -1,40 +1,38 @@
-'use strict';
-
 import { Bind, BindOptions, IBindOptions } from '../../messaging/bind';
 import { Timer, ITimerOptions } from '../../utilities/timer';
-import { AnyNet, IAnyNet } from '../netfactory';
-import { UsersList } from './users_list';
+import { INetworkOptions } from '../interfaces';
 import { Connection } from './connection';
+import { INetwork } from '../interfaces';
+import { Options } from '@kwirk/options';
 import { Channel } from './channel';
-import { Bot } from '../../bot';
+import { IBot } from '@kwirk/bot';
 import { User } from './user';
 import * as _ from 'lodash';
 
-export abstract class Network implements INetwork {
+export abstract class Network<N extends INetwork, O extends INetworkOptions> implements INetwork {
   public name: string;
   public nick: string;
   public Bind: Bind;
-  public users: User<Network>[] = [];
-  public channels: Channel<Network>[] = [];
-  public channel: { [chan: string]: Channel<Network> } = {};
+  public users: User<Network<N, O>>[] = [];
+  public channels: Channel<Network<N, O>>[] = [];
+  public channel: { [chan: string]: Channel<Network<N, O>> } = {};
   public ident: string;
   public type: string;
   public hostname: string;
-  public connection: Connection<Network>;
-  public connection_attempts = 0;
+  public connectionAttempts = 0;
+
+  abstract connection: Connection<Network<N, O>>;
 
   protected _connected: boolean = false;
   protected _enable: boolean = true;
 
-  constructor(public bot: Bot, options: IAnyNet = {}) {
+  constructor(public bot: IBot, public options: Options<O>) {
     if (!options.name || !options.name.trim().length) {
       throw new Error('a network name must be supplied');
     }
 
     this.name = options.name.toLowerCase();
-    this._enable = options.enable === void 0 ? true : Boolean(options.enable);
     this.type = options.type;
-    this.bot.timers[this.name] = [];
 
     this.bot.Logger.info(`Created new network ${this.name} of type ${this.type}`);
   }
@@ -183,57 +181,11 @@ export abstract class Network implements INetwork {
    * @param <string> name: The name of the user you seek
    * @return <User>
    */
-  public findUser(name: string): User<Network> {
+  public findUser(name: string): User<Network<N, O>> {
     return _.find(this.users, (user) => {
       return user.name === name;
     });
   }
 
   public abstract addUser(name: any): void;
-}
-
-export interface INetwork extends INetworkOptions {
-  connection: any;
-
-  bind(options: IBindOptions): void;
-  connect(): void;
-  connected(): boolean;
-  disable(): void;
-  disconnect(message?: string, callback?: Function): void;
-
-  enabled(): boolean;
-  enable(): void;
-
-  send(message: string): void;
-  toString(): string;
-
-  botNick(): string;
-}
-
-export interface INetOptions {
-  /**
-   * Should we enable the network? e.g true
-   */
-  enable?: boolean;
-  /**
-   * What type of network is this? e.g 'irc' or 'slack'
-   */
-  type?: string;
-}
-
-export interface INetworkOptions {
-  /**
-   * Network name, e.g freenode
-   */
-  name?: string;
-
-  /**
-   * How many times should we attempt to reconnect ( before moving to the next server or disabling )
-   */
-  connection_attempts?: number;
-
-  /**
-   * What type of network is this? e.g 'irc' or 'slack'
-   */
-  type?: string;
 }

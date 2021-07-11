@@ -1,8 +1,9 @@
-import { INext, GetSurrogate, SurrogateDelegate, SurrogatePre } from 'surrogate';
-import { Connection, IConnection } from '../base/connection';
+import { SurrogateMethods, SurrogateDelegate, SurrogatePre, NextHandler } from 'surrogate';
 import { IrcErrorHandler } from './irc_error_handler';
 import { MessageBuffer } from './message_buffer';
+import { Connection } from '../base/connection';
 import { Timer } from '../../utilities/timer';
+import { IConnection } from '../interfaces';
 import { IrcServer } from './irc_server';
 import { Handler } from './handler';
 import { Socket } from 'net';
@@ -10,10 +11,16 @@ import * as _ from 'lodash';
 import { Irc } from './irc';
 import * as tls from 'tls';
 
-export interface IrcConnection extends GetSurrogate<IrcConnection> {}
+export interface IrcConnection extends SurrogateMethods<IrcConnection> {}
 
 @SurrogateDelegate()
 export class IrcConnection extends Connection<Irc> implements IIrcConnection {
+  private static MIN_PING = 15000;
+  private static MAX_PING = 300000;
+  private static DEFAULT_DELAY = 5000;
+  private static DEFAULT_PING = 120000;
+  private static MAX_RECONNECT = Math.pow(8, 7);
+
   public reconnectAttempts = 0;
   public request_disconnect: boolean;
   public capabilities: { requested: string[]; enabled: string[] } = {
@@ -23,9 +30,6 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   public registered: boolean;
   public server: IrcServer;
 
-  // the actual nick in use
-  public nick: string;
-
   private reconnect_timer: Timer;
   private handler: Handler;
   private pong_timer: Timer;
@@ -34,12 +38,6 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   public reconnect_delay: number = IrcConnection.DEFAULT_DELAY;
 
   private errorHandler = new IrcErrorHandler(this);
-
-  private static MIN_PING = 15000;
-  private static MAX_PING = 300000;
-  private static DEFAULT_DELAY = 5000;
-  private static DEFAULT_PING = 120000;
-  private static MAX_RECONNECT = Math.pow(8, 7);
 
   constructor(public network: Irc, { pingDelay }: IrcConnectionOptions) {
     super(network);
@@ -62,18 +60,18 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
 
   @SurrogatePre<IrcConnection>([
     {
-      handler: (next: INext<IrcConnection>) =>
+      handler: ({ next, instance }: NextHandler<IrcConnection>) =>
         next.next({
-          bail: next.instance.isConnected(),
+          bail: instance.isConnected(),
           bailWith: null,
         }),
     },
     {
       handler(this: IrcConnection) {
         this.network.bot.Logger.info(
-          `Attempting connection for network ${this.network.name} on server ${
-            this.server.host
-          } using ${this.server.ssl ? 'secure' : 'clear'} channel`,
+          `Attempting connection for network ${this.network.name} on server ${this.server.host} using ${
+            this.server.ssl ? 'secure' : 'clear'
+          } channel`,
         );
 
         this.request_disconnect = false;
@@ -88,11 +86,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   ])
   public connect(callback?: Function): void {
     if (this.isConnected()) {
-      this.emit(
-        `network_already_connected::${this.network.name}`,
-        this.network,
-        this.server,
-      );
+      this.emit(`network_already_connected::${this.network.name}`, this.network, this.server);
       return callback && callback(null);
     }
 
@@ -131,10 +125,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
 
     if (this.invalidPing(toMilliseconds, delay)) {
       delay = IrcConnection.DEFAULT_PING;
-    } else if (
-      delay < IrcConnection.MIN_PING &&
-      toMilliseconds <= IrcConnection.MAX_PING
-    ) {
+    } else if (delay < IrcConnection.MIN_PING && toMilliseconds <= IrcConnection.MAX_PING) {
       delay = toMilliseconds;
     }
 
@@ -169,11 +160,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
     this.socket.on('end', this.onEnd.bind(this));
     this.socket.on('close', this.onClose.bind(this));
 
-    this.network.bot.emit(
-      `connect::${this.network.name}`,
-      this.network,
-      this.server,
-    );
+    this.network.bot.emit(`connect::${this.network.name}`, this.network, this.server);
   }
 
   private pipeSetup(): void {
@@ -193,10 +180,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   public disconnect(callback?: Function): void;
   public disconnect(message?: string): void;
   public disconnect(message: string, callback: Function): void;
-  public disconnect(
-    message: any = this.network.quit_message,
-    callback?: Function,
-  ): void {
+  public disconnect(message: any = this.network.quit_message, callback?: Function): void {
     if (typeof message === 'function') {
       callback = message;
       message = this.network.quit_message;
@@ -277,8 +261,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
    */
   reconnect(): void {
     this._connected = false;
-    this.reconnect_delay =
-      this.reconnect_delay * (this.reconnectAttempts + 1) || this.reconnect_delay;
+    this.reconnect_delay = this.reconnect_delay * (this.reconnectAttempts + 1) || this.reconnect_delay;
 
     if (this.reconnect_delay > IrcConnection.MAX_RECONNECT) {
       this.reconnect_delay = IrcConnection.MAX_RECONNECT;
@@ -383,10 +366,7 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
   }
 
   private setupListeners(): void {
-    this.network.bot.on(
-      `registered::${this.network.name}`,
-      this.onRegistered.bind(this),
-    );
+    this.network.bot.on(`registered::${this.network.name}`, this.onRegistered.bind(this));
   }
 
   /**
@@ -398,9 +378,9 @@ export class IrcConnection extends Connection<Irc> implements IIrcConnection {
 
     this.send(`NICK ${this.nick}`);
     this.send(
-      `USER ${this.network.user_name} ${
-        this.network.modes.includes('i') ? '8' : '0'
-      }" * :${this.network.real_name}`,
+      `USER ${this.network.user_name} ${this.network.modes.includes('i') ? '8' : '0'}" * :${
+        this.network.real_name
+      }`,
     );
   }
 

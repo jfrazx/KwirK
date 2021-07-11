@@ -1,4 +1,5 @@
-import { User, IUserOptions, IUser } from '../base/user';
+import { IUserOptions, IUser } from '../interfaces';
+import { User } from '../base';
 import { Irc } from './irc';
 
 export class IrcUser extends User<Irc> implements IIrcUser {

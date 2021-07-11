@@ -1,19 +1,14 @@
-import {
-  Network,
-  INetwork,
-  INetOptions,
-  INetworkOptions,
-} from '../base/network';
+import { INetwork, INetOptions, INetworkOptions } from '../interfaces';
 import { HipChatUser } from './hipchat_user';
-import { Bot } from '../../bot';
+import { Options } from '@kwirk/options';
+import { Connection, Network } from '../base';
+import { IBot } from '@kwirk/bot';
 import * as _ from 'lodash';
 
-export class HipChat extends Network implements IHipChat {
-  /**
-   * @param <Bot> bot: The bot!!!
-   * @param <IHipChatOptions> options: Options for configuring this network type
-   */
-  constructor(bot: Bot, options: IHipChatOptions) {
+export class HipChat extends Network<IHipChat, HipChatOptions> implements IHipChat {
+  connection: Connection<Network<IHipChat, HipChatOptions>>;
+
+  constructor(bot: IBot, options: Options<IHipChatOptions>) {
     super(bot, options);
 
     _.merge(this, _.omit(options, ['enable', 'name']));
@@ -40,7 +35,7 @@ export class HipChat extends Network implements IHipChat {
   }
 }
 
-export interface IHipChat extends HipChatOptions, INetwork {}
+export interface IHipChat extends INetwork {}
 
 export interface IHipChatOptions extends HipChatOptions, INetOptions {}
 

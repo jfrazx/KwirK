@@ -4,7 +4,7 @@ export class IrcErrorHandler {
   constructor(private connection: IrcConnection) {}
 
   handle(e: any): void {
-    this.error(`an ${e.code} error occured`, e);
+    this.error(`an ${e.code} error occurred`, e);
 
     switch (e.code) {
       case 'ECONNRESET':
@@ -16,10 +16,7 @@ export class IrcErrorHandler {
         return this.connection.network.jump();
 
       case 'ETIMEDOUT':
-        if (
-          this.connection.reconnectAttempts >=
-          this.connection.network.connection_attempts
-        ) {
+        if (this.connection.reconnectAttempts >= this.connection.network.connectionAttempts) {
           this.connection.server.disable();
           this.connection.reconnectAttempts = 0;
           return this.connection.network.jump();

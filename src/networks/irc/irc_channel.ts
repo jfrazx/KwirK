@@ -1,6 +1,6 @@
-import { Channel, IChannel, IChannelOptions } from '../base/channel';
+import { IChannel, IChannelOptions } from '../interfaces';
 import { IrcUser, IIrcUserOptions } from './irc_user';
-import { Network } from '../base/network';
+import { Channel } from '../base/channel';
 import { Irc } from './irc';
 import * as _ from 'lodash';
 
@@ -20,10 +20,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
 
     _.merge(this, _.omit(_.defaults(options, this.defaults()), ['name']));
 
-    this.network.bot.on(
-      `disconnect::${this.network.name}`,
-      this.onDisconnect.bind(this),
-    );
+    this.network.bot.on(`disconnect::${this.network.name}`, this.onDisconnect.bind(this));
   }
 
   /**
@@ -71,10 +68,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
    * @return <void>
    */
   public join(key?: string): void {
-    this.send(
-      _.compact(['JOIN', this.name, key || this.password]).join(' '),
-      true,
-    );
+    this.send(_.compact(['JOIN', this.name, key || this.password]).join(' '), true);
   }
 
   /**
@@ -191,9 +185,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
     this.password = key;
 
     if (this._in_channel && !same) {
-      this.network.send(
-        `MODE ${this.name} ${this.password ? '+k ' + this.password : '-k'}`,
-      );
+      this.network.send(`MODE ${this.name} ${this.password ? '+k ' + this.password : '-k'}`);
     }
   }
 
@@ -219,7 +211,7 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
     const instance: boolean = user instanceof IrcUser;
 
     return Boolean(
-      this.users.forEach(person => {
+      this.users.forEach((person) => {
         return (instance ? (<IrcUser>user).name : user) === person.name;
       }),
     );
@@ -232,16 +224,11 @@ export class IrcChannel extends Channel<Irc> implements IIrcChannel {
   }
 
   private setupListeners(): void {
-    this.network.bot.on(
-      `join::${this.network.name}::${this.name}`,
-      this.on_join.bind(this),
-    );
+    this.network.bot.on(`join::${this.network.name}::${this.name}`, this.on_join.bind(this));
   }
 
   private on_join(user: IrcUser): void {
-    this.network.bot.Logger.info(
-      `user ${user.name} joined ${this.name} on ${this.network.name}`,
-    );
+    this.network.bot.Logger.info(`user ${user.name} joined ${this.name} on ${this.network.name}`);
     this.addUser(user);
   }
 

@@ -3,6 +3,7 @@
  */
 
 import { Bot } from '../src';
+import { IrcRule } from '../src/rules';
 import { Irc } from '../src/networks/irc/irc';
 import { Message } from '../src/messaging/message';
 import { IrcServer } from '../src/networks/irc/irc_server';
@@ -80,6 +81,7 @@ const undernet = {
 };
 
 bot
+  .registerNetworkRule(IrcRule)
   .addNetwork(freenode)
 
   .addNetwork(efnet, (err: Error, network: Irc) => {

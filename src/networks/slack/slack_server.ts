@@ -1,4 +1,5 @@
-import { Server, IServer, IServerOptions } from '../base/server';
+import { IServer, IServerOptions } from '../interfaces';
+import { Server } from '../base';
 import { Slack } from './slack';
 
 export class SlackServer extends Server<Slack> implements ISlackServer {

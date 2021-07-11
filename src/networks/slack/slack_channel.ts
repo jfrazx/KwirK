@@ -1,4 +1,5 @@
-import { Channel, IChannelOptions, IChannel } from '../base/channel';
+import { IChannelOptions, IChannel } from '../interfaces';
+import { Channel } from '../base';
 import { Slack } from './slack';
 
 export class SlackChannel extends Channel<Slack> implements ISlackChannel {

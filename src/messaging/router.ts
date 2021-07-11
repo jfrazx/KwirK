@@ -1,14 +1,14 @@
-import { Network } from '../networks/base/network';
+import { INetwork } from '@kwirk/networks';
 import { AnyNet } from '../networks/netfactory';
 import { Message } from './message';
 import * as winston from 'winston';
-import { Bot } from '../bot';
+import { IBot } from '@kwirk/bot';
 import { Bind } from './bind';
 
 export class Router {
   public buffer: Message<AnyNet>[];
 
-  constructor(public bot: Bot) {}
+  constructor(public bot: IBot) {}
 
   get logger(): typeof winston {
     return this.bot.Logger;
@@ -19,12 +19,10 @@ export class Router {
    * @param <Message> message: The message to route
    * @return <void>
    */
-  public route<N extends Network>(message: Message<N>): void {
+  public route<N extends INetwork>(message: Message<N>): void {
     this.logger.info(
       `Received message from ${message.network.name} ${
-        message.channel
-          ? 'channel ' + message.channel.name
-          : 'user ' + message.user.name
+        message.channel ? 'channel ' + message.channel.name : 'user ' + message.user.name
       }`,
     );
     this.bot.emit(`message::${message.network.name}`, message);
@@ -40,7 +38,7 @@ export class Router {
    * @return <void>
    * @private
    */
-  private bindings<N extends Network>(message: Message<N>): void {
+  private bindings<N extends INetwork>(message: Message<N>): void {
     /**
      * In the event the message is from an individual, we don't bind user messages
      */
@@ -93,9 +91,9 @@ export class Router {
             }
 
             this.bot.Logger.info(
-              `Router binding match ${msg ? 'accepted' : 'rejected'} from ${
-                bind.network
-              }:${bind.channel} to ${bind.destination}:${bind.target} matching: ${
+              `Router binding match ${msg ? 'accepted' : 'rejected'} from ${bind.network}:${
+                bind.channel
+              } to ${bind.destination}:${bind.target} matching: ${
                 joinPart ? 'JOIN/PART' : message.content
               }`,
             );

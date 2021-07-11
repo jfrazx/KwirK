@@ -1,13 +1,11 @@
-import { Channel } from '../networks/base/channel';
-import { Network } from '../networks/base/network';
-import { User } from '../networks/base/user';
+import { Channel, INetwork, User } from '@kwirk/networks';
 import { Message } from './message';
 
 /**
  * @todo work in progress...
  */
 
-export class Response<N extends Network> implements IResponse<N> {
+export class Response<N extends INetwork> implements IResponse<N> {
   public message: string;
   public target: User<N> | Channel<N>;
   public origin_user: User<N>;
@@ -23,9 +21,9 @@ export class Response<N extends Network> implements IResponse<N> {
   }
 }
 
-export interface IResponse<N extends Network> extends IResponseOptions<N> {}
+export interface IResponse<N extends INetwork> extends IResponseOptions<N> {}
 
-export interface IResponseOptions<N extends Network> {
+export interface IResponseOptions<N extends INetwork> {
   message: string;
   origin_user: User<N>;
   origin_channel: Channel<N>;

@@ -1,51 +1,35 @@
-
-import { Network, INetwork, INetworkOptions, INetOptions } from '../base/network';
+import { INetwork, INetworkOptions, INetOptions } from '../interfaces';
+import { SlackConnection } from './slack_connection';
 import { SlackUser } from './slack_user';
-import { Bot } from '../../bot';
+import { Options } from '@kwirk/options';
+import { Network } from '../base';
+import { IBot } from '@kwirk/bot';
 import * as _ from 'lodash';
 
-export class Slack extends Network implements ISlack {
+export class Slack extends Network<ISlack, ISlackOptions> implements ISlack {
+  public connection: SlackConnection;
 
-  /**
-  * @param <Bot> bot: The bot!!!
-  * @param <ISlackOptions> options: Options for configuring this network type
-  */
-  constructor( bot: Bot, options: ISlackOptions ) {
-    super( bot, options );
-
-    _.merge( this, _.omit( options, [ 'enable', 'name' ] ) );
-
+  constructor(bot: IBot, public options: Options<ISlackOptions>) {
+    super(bot, options);
   }
 
-  public connect(): void {
-
-  }
+  public connect(): void {}
 
   public disconnect(): void;
   public disconnect(callback: Function): void;
   public disconnect(message: string): void;
   public disconnect(message: string, callback: Function): void;
-  public disconnect(message?: any, callback?: Function): void {
-  }
+  public disconnect(message?: any, callback?: Function): void {}
 
-  public send( message: string ): void {
-
-  }
+  public send(message: string): void {}
 
   public addUser(): SlackUser {
     return;
   }
-
 }
 
-export interface ISlack extends SlackOptions, INetwork {
+export interface ISlack extends INetwork {}
 
-}
+export interface ISlackOptions extends SlackOptions, INetOptions {}
 
-export interface ISlackOptions extends SlackOptions, INetOptions {
-
-}
-
-export interface SlackOptions extends INetworkOptions {
-
-}
+export interface SlackOptions extends INetworkOptions {}

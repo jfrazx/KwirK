@@ -1,12 +1,12 @@
 import { HipChat, IHipChatOptions } from './hipchat/hipchat';
-import { INetwork, INetworkOptions } from './base/network';
+import { INetwork, INetworkOptions } from './interfaces';
 import { Slack, ISlackOptions } from './slack/slack';
-import { wrapSurrogate, INext } from 'surrogate';
+import { wrapSurrogate, NextHandler } from 'surrogate';
 import { Irc, IIrcOptions } from './irc/irc';
-import { Bot } from '../bot';
+import { IBot } from '@kwirk/bot';
 
 interface NetworkConstructor {
-  new (bot: Bot, options: INetworkOptions): INetwork;
+  new (bot: IBot, options: INetworkOptions): INetwork;
 }
 
 interface NetworkMap {
@@ -20,28 +20,17 @@ const NETWORKS: NetworkMap = {
 };
 
 export namespace NetFactory {
-  /**
-   * Create a network instance of the given type
-   *
-   * @export
-   * @template O
-   * @param {Bot} bot
-   * @param {O} options
-   * @returns {AnyNet}
-   */
-  export function create<O extends INetworkOptions>(bot: Bot, options: O): AnyNet {
+  export function create<O extends INetworkOptions>(bot: IBot, options: O): AnyNet {
     try {
       const net = wrapSurrogate(new NETWORKS[options.type](bot, options));
 
-      net.getSurrogate().registerPreHook('connect', (next: INext<INetwork>) => {
-        const { instance } = next;
-
+      net.getSurrogate().registerPreHook('connect', ({ next, instance }: NextHandler<INetwork>) => {
         next.next({
           bail: !instance.enabled(),
         });
       });
 
-      return (net as any) as AnyNet;
+      return net as any as AnyNet;
     } catch (error) {
       throw new Error(`${options.type} is not a known network type`);
     }

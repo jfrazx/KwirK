@@ -1,4 +1,4 @@
-import { Bot } from '../bot';
+import { IBot } from '@kwirk/bot';
 import * as repl from 'repl';
 import * as _ from 'lodash';
 import * as tls from 'tls';
@@ -33,7 +33,7 @@ export class KREPL implements IKReplOptions {
   public NPNProtocols: any;
   public SNICallback: (servername: string) => any;
 
-  constructor(public bot: Bot, options?: IKReplOptions) {
+  constructor(public bot: IBot, options?: IKReplOptions) {
     _.merge(this, _.defaults(options, this.defaults()));
 
     this.server = new tls.Server((socket: tls.TLSSocket) => {

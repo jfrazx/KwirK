@@ -1,8 +1,9 @@
 
-*.map
-*.ts
 *.log
 *.pid
+.prettierrc
+.editconfig
+test.js
 
 .DS_Store
 todo
@@ -11,5 +12,7 @@ todo
 
 build-examples/
 node_modules/
+examples/
+scripts/
 typings/
 src/

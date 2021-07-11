@@ -1,5 +1,5 @@
-export { SlackConnection } from './slack_connection';
-export { SlackChannel } from './slack_channel';
-export { SlackServer } from './slack_server';
-export { SlackUser } from './slack_user';
-export { Slack } from './slack';
+export * from './slack_connection';
+export * from './slack_channel';
+export * from './slack_server';
+export * from './slack_user';
+export * from './slack';
