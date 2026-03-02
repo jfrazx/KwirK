@@ -16,7 +16,7 @@
     "winston": "^1.0.1"
   },
   "devDependencies": {
-    "chai": "^3.3.0",
+    "chai": "^6.0.0",
     "longjohn": "^0.2.9",
     "mocha": "^2.3.2"
   },
