@@ -18,7 +18,7 @@
   "devDependencies": {
     "chai": "^3.3.0",
     "longjohn": "^0.2.9",
-    "mocha": "^2.3.2"
+    "mocha": "^11.0.0"
   },
   "scripts": {
     "test": "npm run node-test",
